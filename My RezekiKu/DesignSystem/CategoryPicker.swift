@@ -3,12 +3,12 @@ import RezekiCore
 
 /// Picker kategori + subkategori. Caller menyuplai daftar (sudah difilter per jenis
 /// transaksi); subkategori ditampilkan dengan nama induknya.
-public struct CategoryPicker: View {
+struct CategoryPicker: View {
     private let title: String
     private let categories: [TransactionCategory]
     @Binding private var selection: TransactionCategory?
 
-    public init(
+    init(
         _ title: String = "Kategori",
         categories: [TransactionCategory],
         selection: Binding<TransactionCategory?>
@@ -18,7 +18,7 @@ public struct CategoryPicker: View {
         self._selection = selection
     }
 
-    public var body: some View {
+    var body: some View {
         Picker(title, selection: $selection) {
             Text("Tanpa Kategori").tag(TransactionCategory?.none)
             ForEach(categories) { category in

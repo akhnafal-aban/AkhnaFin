@@ -4,7 +4,6 @@
 //
 
 import SwiftUI
-import TransactionsFeature
 
 struct RootView: View {
     let dependencies: AppDependencies

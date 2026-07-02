@@ -2,14 +2,14 @@ import SwiftUI
 import RezekiCore
 
 /// Satu baris transaksi di daftar: ikon kategori, judul, tempat, dan nominal.
-public struct TransactionRow: View {
+struct TransactionRow: View {
     private let transaction: MoneyTransaction
 
-    public init(_ transaction: MoneyTransaction) {
+    init(_ transaction: MoneyTransaction) {
         self.transaction = transaction
     }
 
-    public var body: some View {
+    var body: some View {
         HStack(spacing: 12) {
             Image(systemName: transaction.category?.iconName ?? "tag")
                 .font(.body)
