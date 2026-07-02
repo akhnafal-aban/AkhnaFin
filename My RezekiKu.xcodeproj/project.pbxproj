@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		A6121A282FF57AA800815F96 /* RezekiCore in Frameworks */ = {isa = PBXBuildFile; productRef = A6121A272FF57AA800815F96 /* RezekiCore */; };
 		A6121A292FF57AA800815F96 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = A6121A2A2FF57AA800815F96 /* Persistence */; };
-		A6121A2B2FF57AA800815F96 /* TransactionsFeature in Frameworks */ = {isa = PBXBuildFile; productRef = A6121A2C2FF57AA800815F96 /* TransactionsFeature */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,7 +43,6 @@
 			files = (
 				A6121A282FF57AA800815F96 /* RezekiCore in Frameworks */,
 				A6121A292FF57AA800815F96 /* Persistence in Frameworks */,
-				A6121A2B2FF57AA800815F96 /* TransactionsFeature in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,7 +87,6 @@
 			packageProductDependencies = (
 				A6121A272FF57AA800815F96 /* RezekiCore */,
 				A6121A2A2FF57AA800815F96 /* Persistence */,
-				A6121A2C2FF57AA800815F96 /* TransactionsFeature */,
 			);
 			productName = "My RezekiKu";
 			productReference = A6121A082FF56CB500815F96 /* My RezekiKu.app */;
@@ -380,10 +377,6 @@
 		A6121A2A2FF57AA800815F96 /* Persistence */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Persistence;
-		};
-		A6121A2C2FF57AA800815F96 /* TransactionsFeature */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TransactionsFeature;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

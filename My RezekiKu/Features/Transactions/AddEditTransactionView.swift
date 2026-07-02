@@ -2,10 +2,9 @@ import SwiftUI
 import SwiftData
 import RezekiCore
 import Persistence
-import DesignSystem
 
 /// Form tambah/edit transaksi manual — jalur commit pertama sebelum jalur AI dibangun.
-public struct AddEditTransactionView: View {
+struct AddEditTransactionView: View {
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \TransactionCategory.name) private var allCategories: [TransactionCategory]
 
@@ -20,7 +19,7 @@ public struct AddEditTransactionView: View {
     @State private var category: TransactionCategory?
     @State private var saveFailed = false
 
-    public init(repository: TransactionRepository, transaction: MoneyTransaction? = nil) {
+    init(repository: TransactionRepository, transaction: MoneyTransaction? = nil) {
         self.repository = repository
         self.existing = transaction
         _type = State(initialValue: transaction?.type ?? .expense)
@@ -38,7 +37,7 @@ public struct AddEditTransactionView: View {
             .flatMap { [$0] + ($0.subcategories ?? []).sorted { $0.name < $1.name } }
     }
 
-    public var body: some View {
+    var body: some View {
         NavigationStack {
             Form {
                 Picker("Jenis", selection: $type) {

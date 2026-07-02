@@ -1,10 +1,9 @@
 import Testing
 import Foundation
-import RezekiCore
-@testable import TransactionsFeature
+@testable import RezekiCore
 
-@Suite("TransactionsFeature — grouping")
-struct TransactionsFeatureTests {
+@Suite("RezekiCore — grouping transaksi")
+struct TransactionGroupingTests {
     @Test("Grup per hari, terbaru dulu, item dalam hari terurut menurun")
     func groupsByDayNewestFirst() {
         let calendar = Calendar(identifier: .gregorian)

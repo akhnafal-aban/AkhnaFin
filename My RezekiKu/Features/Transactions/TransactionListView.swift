@@ -2,12 +2,11 @@ import SwiftUI
 import SwiftData
 import RezekiCore
 import Persistence
-import DesignSystem
 
 /// Daftar transaksi: section per tanggal, pencarian, swipe edit/hapus.
 ///
 /// Read reaktif lewat `@Query` (MVVM hybrid); mutasi lewat `TransactionRepository`.
-public struct TransactionListView: View {
+struct TransactionListView: View {
     @Query(sort: \MoneyTransaction.date, order: .reverse) private var transactions: [MoneyTransaction]
     @State private var searchText = ""
     @State private var isAdding = false
@@ -15,7 +14,7 @@ public struct TransactionListView: View {
 
     private let repository: TransactionRepository
 
-    public init(repository: TransactionRepository) {
+    init(repository: TransactionRepository) {
         self.repository = repository
     }
 
@@ -30,7 +29,7 @@ public struct TransactionListView: View {
         }
     }
 
-    public var body: some View {
+    var body: some View {
         NavigationStack {
             List {
                 ForEach(TransactionGrouping.groupByDay(filteredTransactions), id: \.day) { group in
