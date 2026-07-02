@@ -4,9 +4,9 @@ import Foundation
 
 @Suite("RezekiCore — model & formatting")
 struct RezekiCoreTests {
-    @Test("Transaction default sesuai baseline")
+    @Test("MoneyTransaction default sesuai baseline")
     func transactionDefaults() {
-        let tx = Transaction()
+        let tx = MoneyTransaction()
         #expect(tx.amount == 0)
         #expect(tx.currencyCode == "IDR")
         #expect(tx.type == .expense)

@@ -24,8 +24,8 @@ public final class TransactionCategory {
     @Relationship(deleteRule: .nullify, inverse: \TransactionCategory.parent)
     public var subcategories: [TransactionCategory]? = []
 
-    @Relationship(deleteRule: .nullify, inverse: \Transaction.category)
-    public var transactions: [Transaction]? = []
+    @Relationship(deleteRule: .nullify, inverse: \MoneyTransaction.category)
+    public var transactions: [MoneyTransaction]? = []
 
     public init(
         id: UUID = UUID(),

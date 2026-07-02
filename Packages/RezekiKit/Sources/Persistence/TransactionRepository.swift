@@ -3,7 +3,7 @@ import SwiftData
 import RezekiCore
 import ServiceInterfaces
 
-/// Pintu tunggal operasi tulis/baca `Transaction` di atas `ModelContext`.
+/// Pintu tunggal operasi tulis/baca `MoneyTransaction` di atas `ModelContext`.
 ///
 /// Read reaktif untuk UI tetap lewat `@Query` di View (MVVM hybrid); repository ini
 /// dipakai ViewModel/intent untuk commit draft, CRUD, dan query non-reaktif.
@@ -17,12 +17,12 @@ public final class TransactionRepository {
 
     // MARK: - CRUD
 
-    public func create(_ transaction: Transaction) throws {
+    public func create(_ transaction: MoneyTransaction) throws {
         context.insert(transaction)
         try context.save()
     }
 
-    public func delete(_ transaction: Transaction) throws {
+    public func delete(_ transaction: MoneyTransaction) throws {
         context.delete(transaction)
         try context.save()
     }
@@ -32,17 +32,17 @@ public final class TransactionRepository {
         try context.save()
     }
 
-    public func fetchAll() throws -> [Transaction] {
-        let descriptor = FetchDescriptor<Transaction>(
+    public func fetchAll() throws -> [MoneyTransaction] {
+        let descriptor = FetchDescriptor<MoneyTransaction>(
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
         return try context.fetch(descriptor)
     }
 
-    public func fetch(in interval: DateInterval) throws -> [Transaction] {
+    public func fetch(in interval: DateInterval) throws -> [MoneyTransaction] {
         let start = interval.start
         let end = interval.end
-        let descriptor = FetchDescriptor<Transaction>(
+        let descriptor = FetchDescriptor<MoneyTransaction>(
             predicate: #Predicate { $0.date >= start && $0.date < end },
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
@@ -51,14 +51,14 @@ public final class TransactionRepository {
 
     // MARK: - Commit draft (muara pipeline capture)
 
-    /// Ubah draft hasil parsing menjadi `Transaction` tersimpan; lokasi opsional ditempelkan di sini.
+    /// Ubah draft hasil parsing menjadi `MoneyTransaction` tersimpan; lokasi opsional ditempelkan di sini.
     @discardableResult
     public func commit(
         _ draft: TransactionDraft,
         source: EntrySource,
         place: CapturedPlace? = nil
-    ) throws -> Transaction {
-        let transaction = Transaction(
+    ) throws -> MoneyTransaction {
+        let transaction = MoneyTransaction(
             amount: draft.amount,
             currencyCode: draft.currencyCode,
             type: draft.type,

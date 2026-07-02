@@ -7,7 +7,7 @@ import SwiftData
 /// `category` optional (inverse didefinisikan di `Category.transactions`), dan tidak
 /// ada `@Attribute(.unique)`.
 @Model
-public final class Transaction {
+public final class MoneyTransaction {
     public var id: UUID = UUID()
     public var amount: Decimal = 0
     public var currencyCode: String = "IDR"
