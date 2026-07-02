@@ -34,7 +34,7 @@ struct PersistenceTests {
         let context = try makeContext()
         let repository = TransactionRepository(context: context)
 
-        let transaction = Transaction(amount: 20000, merchant: "Kantin")
+        let transaction = MoneyTransaction(amount: 20000, merchant: "Kantin")
         try repository.create(transaction)
         #expect(try repository.fetchAll().count == 1)
 
@@ -93,8 +93,8 @@ struct PersistenceTests {
 
         let january15 = calendar.date(from: DateComponents(year: 2026, month: 1, day: 15))!
         let february15 = calendar.date(from: DateComponents(year: 2026, month: 2, day: 15))!
-        try repository.create(Transaction(amount: 10000, date: january15))
-        try repository.create(Transaction(amount: 20000, date: february15))
+        try repository.create(MoneyTransaction(amount: 10000, date: january15))
+        try repository.create(MoneyTransaction(amount: 20000, date: february15))
 
         let january = DateInterval(
             start: calendar.date(from: DateComponents(year: 2026, month: 1, day: 1))!,
