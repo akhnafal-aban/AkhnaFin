@@ -10,12 +10,14 @@ let package = Package(
     products: [
         .library(name: "RezekiCore", targets: ["RezekiCore"]),
         .library(name: "ServiceInterfaces", targets: ["ServiceInterfaces"]),
-        .library(name: "Persistence", targets: ["Persistence"])
+        .library(name: "Persistence", targets: ["Persistence"]),
+        .library(name: "Services", targets: ["Services"])
     ],
     targets: [
         .target(name: "RezekiCore"),
         .target(name: "ServiceInterfaces", dependencies: ["RezekiCore"]),
         .target(name: "Persistence", dependencies: ["RezekiCore", "ServiceInterfaces"]),
+        .target(name: "Services", dependencies: ["RezekiCore", "ServiceInterfaces"]),
         .testTarget(
             name: "RezekiCoreTests",
             dependencies: ["RezekiCore"]
@@ -27,6 +29,10 @@ let package = Package(
         .testTarget(
             name: "PersistenceTests",
             dependencies: ["Persistence"]
+        ),
+        .testTarget(
+            name: "ServicesTests",
+            dependencies: ["Services"]
         )
     ]
 )

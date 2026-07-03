@@ -5,15 +5,18 @@ import RezekiCore
 public struct MockTransactionParser: TransactionParsing {
     /// Draft dasar yang dikembalikan; `rawInput` selalu diisi teks asli yang di-parse.
     public var template: TransactionDraft
+    public var availability: ParsingAvailability
 
     public init(
         template: TransactionDraft = TransactionDraft(
             amount: 20000,
             merchant: "Kantin Kantor",
             categoryName: "Main Food"
-        )
+        ),
+        availability: ParsingAvailability = .available
     ) {
         self.template = template
+        self.availability = availability
     }
 
     public func parse(_ text: String) async throws -> TransactionDraft {
