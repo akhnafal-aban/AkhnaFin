@@ -7,9 +7,12 @@ import SwiftUI
 import SwiftData
 import RezekiCore
 import Persistence
+import os
 
 @main
 struct My_RezekiKuApp: App {
+    private static let logger = Logger(subsystem: "com.aban.My-RezekiKu", category: "Persistence")
+
     private let container: ModelContainer
     private let dependencies: AppDependencies
 
@@ -17,6 +20,8 @@ struct My_RezekiKuApp: App {
         container = Self.makeContainer()
         do {
             try CategorySeeder.seedIfNeeded(context: container.mainContext)
+            // Konvergensi multi-device: gabungkan built-in dobel setelah import CloudKit tiba.
+            try CategorySeeder.dedupeIfNeeded(context: container.mainContext)
         } catch {
             assertionFailure("Seeding kategori gagal: \(error)")
         }
@@ -35,6 +40,7 @@ struct My_RezekiKuApp: App {
         do {
             return try ModelContainerFactory.make(mode: .cloudKit)
         } catch {
+            logger.error("Container CloudKit gagal, fallback ke penyimpanan lokal (sync NONAKTIF): \(String(describing: error), privacy: .public)")
             do {
                 return try ModelContainerFactory.make(mode: .localOnly)
             } catch {
