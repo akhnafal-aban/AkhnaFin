@@ -11,6 +11,7 @@ struct TransactionListView: View {
     @State private var searchText = ""
     @State private var isAdding = false
     @State private var editingTransaction: MoneyTransaction?
+    @State private var deleteFailed = false
 
     private let repository: TransactionRepository
 
@@ -40,7 +41,11 @@ struct TransactionListView: View {
                                 .onTapGesture { editingTransaction = transaction }
                                 .swipeActions(edge: .trailing) {
                                     Button(role: .destructive) {
-                                        try? repository.delete(transaction)
+                                        do {
+                                            try repository.delete(transaction)
+                                        } catch {
+                                            deleteFailed = true
+                                        }
                                     } label: {
                                         Label("Hapus", systemImage: "trash")
                                     }
@@ -71,6 +76,9 @@ struct TransactionListView: View {
             }
             .sheet(item: $editingTransaction) { transaction in
                 AddEditTransactionView(repository: repository, transaction: transaction)
+            }
+            .alert("Gagal menghapus transaksi", isPresented: $deleteFailed) {
+                Button("OK", role: .cancel) {}
             }
             .overlay {
                 if transactions.isEmpty {

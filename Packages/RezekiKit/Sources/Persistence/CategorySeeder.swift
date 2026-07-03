@@ -25,4 +25,37 @@ public enum CategorySeeder {
         }
         try context.save()
     }
+
+    /// Menyatukan kategori duplikat hasil race seeding multi-device: tiap device
+    /// men-seed lokal sebelum import CloudKit device lain tiba, sehingga built-in
+    /// bisa dobel. Dipanggil tiap launch; pemenang dipilih deterministik (UUID
+    /// terkecil) agar semua device konvergen ke record yang sama, transaksi &
+    /// subkategori milik duplikat dipindahkan dulu sebelum dihapus.
+    public static func dedupeIfNeeded(context: ModelContext) throws {
+        let all = try context.fetch(FetchDescriptor<TransactionCategory>())
+        let grouped = Dictionary(grouping: all) { dedupeKey(for: $0) }
+        var didChange = false
+        for duplicates in grouped.values where duplicates.count > 1 {
+            let sorted = duplicates.sorted { $0.id.uuidString < $1.id.uuidString }
+            let keeper = sorted[0]
+            for loser in sorted.dropFirst() {
+                for transaction in loser.transactions ?? [] {
+                    transaction.category = keeper
+                }
+                for subcategory in loser.subcategories ?? [] {
+                    subcategory.parent = keeper
+                }
+                context.delete(loser)
+                didChange = true
+            }
+        }
+        if didChange {
+            try context.save()
+        }
+    }
+
+    private static func dedupeKey(for category: TransactionCategory) -> String {
+        let parentName = category.parent?.name.lowercased() ?? ""
+        return "\(category.name.lowercased())|\(category.kind.rawValue)|\(parentName)"
+    }
 }
