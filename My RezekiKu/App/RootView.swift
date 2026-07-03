@@ -13,6 +13,9 @@ struct RootView: View {
             Tab("Transaksi", systemImage: "list.bullet.rectangle") {
                 TransactionListView(repository: dependencies.repository)
             }
+            Tab("Catat Cepat", systemImage: "wand.and.stars") {
+                QuickAddView(parser: dependencies.parser, repository: dependencies.repository)
+            }
             Tab("Pengaturan", systemImage: "gearshape") {
                 SettingsPlaceholderView()
             }

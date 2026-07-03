@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		A6121A282FF57AA800815F96 /* RezekiCore in Frameworks */ = {isa = PBXBuildFile; productRef = A6121A272FF57AA800815F96 /* RezekiCore */; };
 		A6121A292FF57AA800815F96 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = A6121A2A2FF57AA800815F96 /* Persistence */; };
+		A6121A2D2FF57AA800815F96 /* ServiceInterfaces in Frameworks */ = {isa = PBXBuildFile; productRef = A6121A2E2FF57AA800815F96 /* ServiceInterfaces */; };
+		A6121A2F2FF57AA800815F96 /* Services in Frameworks */ = {isa = PBXBuildFile; productRef = A6121A302FF57AA800815F96 /* Services */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +45,8 @@
 			files = (
 				A6121A282FF57AA800815F96 /* RezekiCore in Frameworks */,
 				A6121A292FF57AA800815F96 /* Persistence in Frameworks */,
+				A6121A2D2FF57AA800815F96 /* ServiceInterfaces in Frameworks */,
+				A6121A2F2FF57AA800815F96 /* Services in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,6 +91,8 @@
 			packageProductDependencies = (
 				A6121A272FF57AA800815F96 /* RezekiCore */,
 				A6121A2A2FF57AA800815F96 /* Persistence */,
+				A6121A2E2FF57AA800815F96 /* ServiceInterfaces */,
+				A6121A302FF57AA800815F96 /* Services */,
 			);
 			productName = "My RezekiKu";
 			productReference = A6121A082FF56CB500815F96 /* My RezekiKu.app */;
@@ -377,6 +383,14 @@
 		A6121A2A2FF57AA800815F96 /* Persistence */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Persistence;
+		};
+		A6121A2E2FF57AA800815F96 /* ServiceInterfaces */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ServiceInterfaces;
+		};
+		A6121A302FF57AA800815F96 /* Services */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Services;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

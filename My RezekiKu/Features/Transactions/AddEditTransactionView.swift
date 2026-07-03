@@ -30,13 +30,6 @@ struct AddEditTransactionView: View {
         _category = State(initialValue: transaction?.category)
     }
 
-    /// Kategori level atas se-jenis, masing-masing diikuti subkategorinya.
-    private var selectableCategories: [TransactionCategory] {
-        allCategories
-            .filter { $0.parent == nil && $0.kind == type }
-            .flatMap { [$0] + ($0.subcategories ?? []).sorted { $0.name < $1.name } }
-    }
-
     var body: some View {
         NavigationStack {
             Form {
@@ -52,7 +45,7 @@ struct AddEditTransactionView: View {
                 }
 
                 Section("Detail") {
-                    CategoryPicker(categories: selectableCategories, selection: $category)
+                    CategoryPicker(categories: allCategories.selectable(for: type), selection: $category)
                     DatePicker("Tanggal", selection: $date)
                     TextField("Merchant / tempat beli", text: $merchant)
                     TextField("Catatan", text: $note)
