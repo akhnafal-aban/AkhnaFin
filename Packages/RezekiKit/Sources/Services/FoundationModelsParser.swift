@@ -144,7 +144,7 @@ public struct FoundationModelsParser: TransactionParsing {
         merchant "Office Canteen", note "meatballs", categoryName "Main Food"
         "pay electricity 350k yesterday" -> amount 350000, type expense, daysAgo 1, \
         note "electricity", categoryName "Tagihan"
-        "salary came in 8m this month" -> amount 8000000, type income, daysAgo 0, categoryName "Gaji"
+        "salary came in 5.73m this month" -> amount 5370000, type income, daysAgo 0, categoryName "Gaji"
         "movie tickets 50k" -> amount 50000, type expense, daysAgo 0, note "movie", \
         categoryName "Lifestyle", subcategoryName "Hiburan"
         """

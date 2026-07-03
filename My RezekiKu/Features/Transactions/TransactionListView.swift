@@ -63,6 +63,7 @@ struct TransactionListView: View {
                 }
             }
             .navigationTitle("Transaksi")
+            .toolbarTitleDisplayMode(.inlineLarge)
             .searchable(text: $searchText, prompt: "Cari merchant, catatan, kategori")
             .toolbar {
                 Button {
