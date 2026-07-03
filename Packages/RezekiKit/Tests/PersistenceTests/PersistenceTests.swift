@@ -85,6 +85,31 @@ struct PersistenceTests {
         #expect(tx.placeName == "Kantin Kantor")
     }
 
+    @Test("Dedupe menggabungkan kategori dobel & memindahkan transaksinya")
+    func dedupeMergesDuplicates() throws {
+        let context = try makeContext()
+        try CategorySeeder.seedIfNeeded(context: context)
+
+        // Simulasi race seeding multi-device: set built-in kedua ter-import dari CloudKit.
+        let duplicateMainFood = TransactionCategory(name: "Main Food", kind: .expense, isBuiltIn: true)
+        context.insert(duplicateMainFood)
+        let tx = MoneyTransaction(amount: 20000, category: duplicateMainFood)
+        context.insert(tx)
+        try context.save()
+
+        try CategorySeeder.dedupeIfNeeded(context: context)
+
+        let all = try context.fetch(FetchDescriptor<TransactionCategory>())
+        #expect(all.filter { $0.name == "Main Food" }.count == 1)
+        #expect(all.count == 10)
+        // Transaksi milik duplikat berpindah ke kategori pemenang, bukan jadi nil.
+        #expect(tx.category?.name == "Main Food")
+
+        // Idempotent: run kedua tidak mengubah apa pun.
+        try CategorySeeder.dedupeIfNeeded(context: context)
+        #expect(try context.fetch(FetchDescriptor<TransactionCategory>()).count == 10)
+    }
+
     @Test("Fetch per rentang tanggal")
     func fetchByDateInterval() throws {
         let context = try makeContext()
