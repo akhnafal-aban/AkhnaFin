@@ -21,6 +21,23 @@ struct ServiceInterfacesTests {
         #expect(drafts[1].rawInput == "kopi 8k")
     }
 
+    @Test("TransactionDraft roundtrip Codable (handoff intent → app)")
+    func draftCodableRoundtrip() throws {
+        let draft = TransactionDraft(
+            amount: 20000,
+            type: .expense,
+            date: Date(timeIntervalSince1970: 1_750_000_000),
+            note: "bakso",
+            merchant: "Kantin Kantor",
+            categoryName: "Main Food",
+            subcategoryName: "",
+            rawInput: "buy meatballs 20k"
+        )
+        let data = try JSONEncoder().encode(draft)
+        let decoded = try JSONDecoder().decode(TransactionDraft.self, from: data)
+        #expect(decoded == draft)
+    }
+
     @Test("Mock location mengembalikan tempat yang di-set")
     func mockLocationReturnsPlace() async {
         let capturer = MockLocationCapturer()

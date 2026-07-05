@@ -4,9 +4,14 @@
 //
 
 import SwiftUI
+import RezekiCore
+import ServiceInterfaces
 
 struct RootView: View {
     let dependencies: AppDependencies
+
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var handoffDraft: HandoffDraft?
 
     var body: some View {
         TabView {
@@ -20,7 +25,31 @@ struct RootView: View {
                 SettingsPlaceholderView()
             }
         }
+        // Jalur "Edit di App" dari snippet intent (A3): konsumsi draft handoff
+        // saat app aktif → sajikan layar konfirmasi prefilled.
+        .onAppear(perform: consumeEditRequest)
+        .onChange(of: scenePhase) {
+            if scenePhase == .active { consumeEditRequest() }
+        }
+        .sheet(item: $handoffDraft) { handoff in
+            ConfirmDraftView(
+                draft: handoff.draft,
+                repository: dependencies.repository,
+                source: .appIntent
+            )
+        }
     }
+
+    private func consumeEditRequest() {
+        if let draft = PendingDraftStore.consumeEditRequest() {
+            handoffDraft = HandoffDraft(draft: draft)
+        }
+    }
+}
+
+private struct HandoffDraft: Identifiable {
+    let id = UUID()
+    let draft: TransactionDraft
 }
 
 /// Placeholder — diganti SettingsFeature (kelola kategori, izin, status iCloud) pada fasenya.
