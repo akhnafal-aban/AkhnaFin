@@ -116,7 +116,12 @@ public struct FoundationModelsParser: TransactionParsing {
         let interval = parserSignposter.beginInterval("parse")
         defer { parserSignposter.endInterval("parse", interval) }
         do {
-            let response = try await session.respond(to: text, generating: ParsedTransaction.self)
+            // Greedy sampling: output deterministik — kualitas terukur & stabil (BUG-1a).
+            let response = try await session.respond(
+                to: text,
+                generating: ParsedTransaction.self,
+                options: GenerationOptions(sampling: .greedy)
+            )
             parserLog.info("parse sukses (\(text.count) chars input)")
             return response.content.draft(rawInput: text)
         } catch {
@@ -138,20 +143,50 @@ public struct FoundationModelsParser: TransactionParsing {
     private var instructions: String {
         """
         You are a personal-finance parser. Convert the user's English sentence into \
-        structured transaction data. Amounts: "k" = thousand, "m" = million.
-        Available main categories: \(categoryNames.joined(separator: ", ")).
-        Available subcategories: \(subcategoryNames.joined(separator: ", ")).
-        Choose categoryName/subcategoryName ONLY from those lists; leave empty if unsure.
+        structured transaction data.
+        Amount rules: "k" = ×1000, "m" = ×1000000. "20k" = 20000. "250k" = 250000. \
+        "1.5m" = 1500000. "2.5m" = 2500000. "5.73m" = 5730000. \
+        Never round, never add extra zeros, never drop digits.
+        Available main categories: \(Self.describe(categoryNames)).
+        Available subcategories: \(Self.describe(subcategoryNames)).
+        Category names are Indonesian; the meaning in parentheses tells you when to use them. \
+        Output the exact category NAME (not the meaning). Choose ONLY from those lists; \
+        leave empty if unsure.
 
         Examples:
         "buy meatballs 20k at the office canteen" -> amount 20000, type expense, daysAgo 0, \
         merchant "Office Canteen", note "meatballs", categoryName "Main Food"
         "pay electricity 350k yesterday" -> amount 350000, type expense, daysAgo 1, \
         note "electricity", categoryName "Tagihan"
-        "salary came in 5.73m this month" -> amount 5370000, type income, daysAgo 0, categoryName "Gaji"
-        "movie tickets 50k" -> amount 50000, type expense, daysAgo 0, note "movie", \
+        "salary came in 5.73m this month" -> amount 5730000, type income, daysAgo 0, categoryName "Gaji"
+        "grab ride to the airport 125k" -> amount 125000, type expense, daysAgo 0, \
+        merchant "Grab", note "ride to the airport", categoryName "Transport"
+        "movie tickets 50k two days ago" -> amount 50000, type expense, daysAgo 2, note "movie", \
         categoryName "Lifestyle", subcategoryName "Hiburan"
+        "swimming pool entry 60k" -> amount 60000, type expense, daysAgo 0, note "swimming", \
+        categoryName "Lifestyle", subcategoryName "Olahraga"
         """
+    }
+
+    /// Glossary kategori seed: nama Indonesia + arti English agar model bisa
+    /// memetakan input English → nama kategori Indonesia (BUG-1a).
+    private static let glossary: [String: String] = [
+        "Main Food": "daily meals",
+        "Lifestyle": "leisure & hobbies",
+        "Jajan": "snacks / street food / coffee",
+        "Hiburan": "entertainment: movies, games, streaming, concerts",
+        "Olahraga": "sports & fitness: gym membership, badminton, futsal, swimming, running gear",
+        "Tagihan": "bills & utilities: electricity, water, internet, rent, subscriptions",
+        "Transport": "transportation: fuel, parking, ride-hailing, public transit",
+        "Kesehatan": "health & medical",
+        "Gaji": "salary / wages",
+        "Bonus": "bonus / incentives / gifts received",
+    ]
+
+    private static func describe(_ names: [String]) -> String {
+        names
+            .map { name in glossary[name].map { "\(name) (= \($0))" } ?? name }
+            .joined(separator: ", ")
     }
 
     private static func describe(_ reason: SystemLanguageModel.Availability.UnavailableReason) -> String {
