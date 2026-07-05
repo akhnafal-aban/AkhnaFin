@@ -73,10 +73,10 @@ struct TransactionListView: View {
                 }
             }
             .sheet(isPresented: $isAdding) {
-                AddEditTransactionView(repository: repository)
+                TransactionFormView(mode: .add, repository: repository)
             }
             .sheet(item: $editingTransaction) { transaction in
-                AddEditTransactionView(repository: repository, transaction: transaction)
+                TransactionFormView(mode: .edit(transaction), repository: repository)
             }
             .alert("Gagal menghapus transaksi", isPresented: $deleteFailed) {
                 Button("OK", role: .cancel) {}
