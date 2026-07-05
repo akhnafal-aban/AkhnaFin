@@ -23,7 +23,7 @@ struct ConfirmExpenseSnippetIntent: SnippetIntent {
 }
 
 /// Dipicu tombol "Edit di App" di snippet: pindahkan draft ke slot handoff
-/// lalu buka app — RootView mendeteksi dan menyajikan ConfirmDraftView.
+/// lalu buka app — RootView mendeteksi dan menyajikan TransactionFormView (mode confirmDraft).
 struct EditExpenseInAppIntent: AppIntent {
     static let title: LocalizedStringResource = "Edit Draft di App"
     static let isDiscoverable = false
