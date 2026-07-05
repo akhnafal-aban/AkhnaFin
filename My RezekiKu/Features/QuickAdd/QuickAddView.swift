@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import RezekiCore
 import ServiceInterfaces
+import Services
 import Persistence
 
 /// Catat cepat: ketik satu kalimat ("beli bakso 20k di kantin kantor") →
@@ -69,11 +70,18 @@ struct QuickAddView: View {
                     }
                 }
                 .disabled(trimmedInput.isEmpty || isParsing)
-            } footer: {
-                if let errorMessage {
-                    Text(errorMessage).foregroundStyle(.red)
-                }
             }
+        }
+        .alert(
+            "Gagal memproses",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorMessage ?? "")
         }
         .keyboardDismissable()
         .sheet(item: $pending) { pending in
@@ -93,9 +101,11 @@ struct QuickAddView: View {
         errorMessage = nil
         isParsing = true
         let text = trimmedInput
+        let pipeline = QuickLogPipeline(parser: parser)
         Task {
             do {
-                let draft = try await parser.parse(text)
+                // Pipeline yang sama dgn App Intent: pagar waktu + error granular.
+                let draft = try await pipeline.parseDraft(from: text)
                 pending = PendingDraft(draft: draft)
             } catch {
                 errorMessage = (error as? LocalizedError)?.errorDescription
