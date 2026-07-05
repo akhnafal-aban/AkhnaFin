@@ -1,7 +1,10 @@
 import Foundation
+import OSLog
 import SwiftData
 import RezekiCore
 import ServiceInterfaces
+
+private let persistenceSignposter = OSSignposter(subsystem: "com.aban.My-RezekiKu", category: "Persistence")
 
 /// Pintu tunggal operasi tulis/baca `MoneyTransaction` di atas `ModelContext`.
 ///
@@ -58,6 +61,8 @@ public final class TransactionRepository {
         source: EntrySource,
         place: CapturedPlace? = nil
     ) throws -> MoneyTransaction {
+        let interval = persistenceSignposter.beginInterval("commit")
+        defer { persistenceSignposter.endInterval("commit", interval) }
         let transaction = MoneyTransaction(
             amount: draft.amount,
             currencyCode: draft.currencyCode,
