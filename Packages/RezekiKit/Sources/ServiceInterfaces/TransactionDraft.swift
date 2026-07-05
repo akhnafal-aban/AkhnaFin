@@ -5,7 +5,7 @@ import RezekiCore
 ///
 /// Tipe polos tanpa dependensi framework AI — implementasi parser (mis. Foundation
 /// Models dengan `@Generable`) hidup di target `Services` dan me-map hasilnya ke sini.
-public struct TransactionDraft: Sendable, Equatable {
+public struct TransactionDraft: Sendable, Equatable, Codable {
     public var amount: Decimal
     public var currencyCode: String
     public var type: TransactionType
