@@ -7,9 +7,13 @@
 //
 
 import AppIntents
+import OSLog
 import RezekiCore
 import ServiceInterfaces
+import Services
 import Persistence
+
+private let intentLog = Logger(subsystem: "com.aban.My-RezekiKu", category: "Intent")
 
 struct LogExpenseIntent: AppIntent {
     static let title: LocalizedStringResource = "Catat Pengeluaran"
@@ -27,14 +31,31 @@ struct LogExpenseIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let dependencies = AppDependencies(container: AppContainer.make())
+        // Container & wiring dibangun sekali per proses (BUG-2a) — bukan per invocation.
+        let dependencies = AppContainer.dependencies
+        intentLog.info("LogExpense mulai (\(text.count, privacy: .public) chars)")
 
-        let draft = try await dependencies.parser.parse(text)
+        // Parse dengan pagar waktu — error granular, tidak pernah stuck (BUG-2b).
+        let draft: TransactionDraft
+        do {
+            draft = try await QuickLogPipeline(parser: dependencies.parser).parseDraft(from: text)
+            intentLog.info("LogExpense parse sukses")
+        } catch let error as QuickLogError {
+            intentLog.error("LogExpense parse gagal: \(String(describing: error), privacy: .public)")
+            return .result(dialog: "\(error.errorDescription ?? "Gagal memproses.")")
+        }
 
         // Konfirmasi-dulu: hasil AI tak pernah langsung tersimpan.
+        // (Pembatalan user melempar error sistem — biarkan menyebar, jangan ditelan.)
         try await requestConfirmation(dialog: "Catat \(Self.summary(of: draft))?")
 
-        _ = try dependencies.repository.commit(draft, source: .appIntent)
+        do {
+            _ = try dependencies.repository.commit(draft, source: .appIntent)
+        } catch {
+            intentLog.error("LogExpense simpan gagal: \(String(describing: error), privacy: .public)")
+            return .result(dialog: "Draft benar, tapi gagal menyimpan. Coba lagi dari dalam app.")
+        }
+        intentLog.info("LogExpense tersimpan")
         return .result(dialog: "Tercatat: \(Self.summary(of: draft)).")
     }
 

@@ -12,8 +12,8 @@ struct My_RezekiKuApp: App {
     private let dependencies: AppDependencies
 
     init() {
-        container = AppContainer.make()
-        dependencies = AppDependencies(container: container)
+        container = AppContainer.shared
+        dependencies = AppContainer.dependencies
     }
 
     var body: some Scene {
