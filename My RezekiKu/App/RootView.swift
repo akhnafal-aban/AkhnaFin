@@ -32,10 +32,9 @@ struct RootView: View {
             if scenePhase == .active { consumeEditRequest() }
         }
         .sheet(item: $handoffDraft) { handoff in
-            ConfirmDraftView(
-                draft: handoff.draft,
-                repository: dependencies.repository,
-                source: .appIntent
+            TransactionFormView(
+                mode: .confirmDraft(handoff.draft, source: .appIntent),
+                repository: dependencies.repository
             )
         }
     }
