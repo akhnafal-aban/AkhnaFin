@@ -5,6 +5,7 @@ import RezekiCore
 import ServiceInterfaces
 
 private let parserLog = Logger(subsystem: "com.aban.My-RezekiKu", category: "Parser")
+private let parserSignposter = OSSignposter(subsystem: "com.aban.My-RezekiKu", category: "Parser")
 
 /// Skema terstruktur yang dihasilkan model on-device (guided generation).
 ///
@@ -112,8 +113,11 @@ public struct FoundationModelsParser: TransactionParsing {
         // Session baru per permintaan: parsing bersifat stateless, transcript
         // yang menumpuk hanya membengkakkan konteks.
         let session = LanguageModelSession(instructions: instructions)
+        let interval = parserSignposter.beginInterval("parse")
+        defer { parserSignposter.endInterval("parse", interval) }
         do {
             let response = try await session.respond(to: text, generating: ParsedTransaction.self)
+            parserLog.info("parse sukses (\(text.count) chars input)")
             return response.content.draft(rawInput: text)
         } catch {
             parserLog.error("FoundationModels respond gagal: \(String(describing: error), privacy: .public)")
