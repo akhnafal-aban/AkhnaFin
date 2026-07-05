@@ -45,9 +45,23 @@ struct LogExpenseIntent: AppIntent {
             return .result(dialog: "\(error.errorDescription ?? "Gagal memproses.")")
         }
 
-        // Konfirmasi-dulu: hasil AI tak pernah langsung tersimpan.
-        // (Pembatalan user melempar error sistem — biarkan menyebar, jangan ditelan.)
-        try await requestConfirmation(dialog: "Catat \(Self.summary(of: draft))?")
+        // Konfirmasi-dulu dengan snippet interaktif (A3): kartu ringkasan +
+        // tombol "Edit di App". Draft di-stash agar snippet bisa merender
+        // dan jalur edit bisa handoff ke app.
+        PendingDraftStore.stash(draft)
+        do {
+            try await requestConfirmation(
+                dialog: "Catat \(Self.summary(of: draft))?",
+                snippetIntent: ConfirmExpenseSnippetIntent()
+            )
+        } catch {
+            // Batal / pindah ke jalur edit: bersihkan slot konfirmasi.
+            // (Slot handoff edit terpisah dan tetap utuh bila user memilih Edit.)
+            PendingDraftStore.clearStash()
+            intentLog.info("LogExpense konfirmasi dibatalkan")
+            throw error
+        }
+        PendingDraftStore.clearStash()
 
         do {
             _ = try dependencies.repository.commit(draft, source: .appIntent)
