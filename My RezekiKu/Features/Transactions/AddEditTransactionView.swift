@@ -51,6 +51,7 @@ struct AddEditTransactionView: View {
                     TextField("Catatan", text: $note)
                 }
             }
+            .keyboardDismissable()
             .navigationTitle(existing == nil ? "Transaksi Baru" : "Edit Transaksi")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

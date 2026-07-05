@@ -75,6 +75,7 @@ struct QuickAddView: View {
                 }
             }
         }
+        .keyboardDismissable()
         .sheet(item: $pending) { pending in
             ConfirmDraftView(draft: pending.draft, repository: repository) {
                 input = ""
