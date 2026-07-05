@@ -1,9 +1,18 @@
 # PLAN-001 — Fase A: Stabilisasi Inti
 
-- **Status:** Aktif
-- **Dibuat:** 2026-07-04
+- **Status:** Aktif — A0–A5 selesai; A6 porsi unit+simulator ✅; MENUNGGU checklist device user
+- **Dibuat:** 2026-07-04 · **Update:** 2026-07-06
 - **Induk:** PLAN-000-master-roadmap
-- **Commit range:** mulai setelah `1c77517`
+- **Commit range:** `1336222`(A0) `3234cd0`(A1) `a4eea46`(A2) `87b47a6`(A4) `f5ead39`(A3) `846de8e`(A5)
+
+## Hasil eksekusi
+- A0 ✅ plan docs + signpost + DEBUGGING.md.
+- A1 ✅ keyboard: scroll/tap/Selesai dismiss (gated agar fokus field tak regresi); terverifikasi sim.
+- A2 ✅ AppContainer.shared sekali per proses; QuickLogPipeline timeout 15s + error granular (4 test).
+- A3 ✅ snippet konfirmasi interaktif + Edit di App (PendingDraftStore 2 slot, handoff → TransactionFormView).
+- A4 ✅ parser: few-shot salah diperbaiki, glossary, greedy; eval live 20 kalimat: amount 100%, type 100%, kategori 88% (2 miss subkategori Olahraga — batas model 300M, layar konfirmasi menutupi).
+- A5 ✅ TransactionFormView tunggal (add/edit/confirmDraft); CRUD sim end-to-end ✅.
+- Total 25 unit test hijau (incl. live eval di Mac host).
 
 Tujuan: tutup 3 bug device (iPhone 17); parser terukur; intent tahan banting. Kerjakan berurutan; commit per langkah; `swift test` + `xcodebuild build` hijau tiap commit.
 
