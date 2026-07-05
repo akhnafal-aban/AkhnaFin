@@ -76,6 +76,7 @@ struct ConfirmDraftView: View {
                     TextField("Catatan", text: $note)
                 }
             }
+            .keyboardDismissable()
             .navigationTitle("Konfirmasi Transaksi")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
