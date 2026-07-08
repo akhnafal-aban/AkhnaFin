@@ -22,12 +22,6 @@ private struct KeyboardDismissable: ViewModifier {
                 TapGesture().onEnded(endEditing),
                 including: keyboardVisible ? .all : .subviews
             )
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Selesai", action: endEditing)
-                }
-            }
         #if canImport(UIKit)
             .onReceive(NotificationCenter.default.publisher(
                 for: UIResponder.keyboardWillShowNotification)) { _ in keyboardVisible = true }
