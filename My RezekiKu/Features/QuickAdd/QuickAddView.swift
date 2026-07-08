@@ -44,7 +44,7 @@ struct QuickAddView: View {
         Form {
             Section {
                 TextField(
-                    "buy meatballs 20k at the office canteen",
+                    "buy [food] [xxk] at the [places]",
                     text: $input,
                     axis: .vertical
                 )
@@ -52,12 +52,7 @@ struct QuickAddView: View {
                 .focused($inputFocused)
                 .submitLabel(.go)
                 .onSubmit(parse)
-            } header: {
-                Text("Tulis transaksimu dalam satu kalimat (Bahasa Inggris)")
-            } footer: {
-                Text("Contoh: \"pay electricity 350k yesterday\", \"salary came in 8m\", \"movie tickets 50k\"")
             }
-
             Section {
                 Button(action: parse) {
                     if isParsing {
