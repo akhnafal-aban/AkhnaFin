@@ -1,7 +1,7 @@
 # PLAN-001 — Fase A: Stabilisasi Inti
 
-- **Status:** Aktif — A0–A5 selesai; A6 porsi unit+simulator ✅; MENUNGGU checklist device user
-- **Dibuat:** 2026-07-04 · **Update:** 2026-07-06
+- **Status:** Selesai — gerbang device terbukti via log user iPhone 17 (LogExpense mulai→parse sukses→konfirmasi; keyboard & QuickAdd dipakai). Catatan pasca-gerbang: tombol "Selesai" dihapus atas preferensi user (tap/scroll dismiss cukup).
+- **Dibuat:** 2026-07-04 · **Selesai:** 2026-07-06
 - **Induk:** PLAN-000-master-roadmap
 - **Commit range:** `1336222`(A0) `3234cd0`(A1) `a4eea46`(A2) `87b47a6`(A4) `f5ead39`(A3) `846de8e`(A5)
 

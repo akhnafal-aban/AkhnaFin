@@ -1,6 +1,6 @@
 # PLAN-002 — Fase B: Receipt Screenshot via Shortcut
 
-- **Status:** Draft (Aktif setelah gerbang A6 PLAN-001 lulus)
+- **Status:** Aktif (gerbang A6 lulus 2026-07-06)
 - **Dibuat:** 2026-07-04
 - **Induk:** PLAN-000-master-roadmap
 
