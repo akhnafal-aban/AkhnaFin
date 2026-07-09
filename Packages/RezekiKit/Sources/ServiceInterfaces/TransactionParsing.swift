@@ -31,4 +31,8 @@ public protocol TransactionParsing: Sendable {
 
     /// Parse beberapa transaksi sekaligus (satu per baris, atau kalimat majemuk) — untuk batch entry.
     func parseBatch(_ text: String) async throws -> [TransactionDraft]
+
+    /// Parse teks OCR resi belanja (multi-baris) menjadi draft: total akhir,
+    /// merchant, ringkasan item, saran kategori. Selalu expense.
+    func parseReceipt(text: String) async throws -> TransactionDraft
 }
