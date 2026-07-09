@@ -33,15 +33,20 @@ struct RootView: View {
         }
         .sheet(item: $handoffDraft) { handoff in
             TransactionFormView(
-                mode: .confirmDraft(handoff.draft, source: .appIntent),
+                mode: .confirmDraft(handoff.draft, source: handoff.source, receiptImage: handoff.receiptImage),
                 repository: dependencies.repository
             )
         }
     }
 
     private func consumeEditRequest() {
-        if let draft = PendingDraftStore.consumeEditRequest() {
-            handoffDraft = HandoffDraft(draft: draft)
+        if let pending = PendingDraftStore.consumeEditRequest() {
+            // Draft dari intent resi membawa gambar → sumbernya .receipt.
+            handoffDraft = HandoffDraft(
+                draft: pending.draft,
+                receiptImage: pending.receiptImage,
+                source: pending.receiptImage == nil ? .appIntent : .receipt
+            )
         }
     }
 }
@@ -49,6 +54,8 @@ struct RootView: View {
 private struct HandoffDraft: Identifiable {
     let id = UUID()
     let draft: TransactionDraft
+    let receiptImage: Data?
+    let source: EntrySource
 }
 
 /// Placeholder — diganti SettingsFeature (kelola kategori, izin, status iCloud) pada fasenya.

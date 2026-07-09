@@ -73,6 +73,22 @@ struct PersistenceTests {
         #expect(try repository.commit(missDraft, source: .manual).category == nil)
     }
 
+    @Test("Gambar resi tersimpan saat commit; default nil")
+    func commitAttachesReceiptImage() throws {
+        let context = try makeContext()
+        let repository = TransactionRepository(context: context)
+
+        let image = Data([0x89, 0x50, 0x4E, 0x47])
+        let withImage = try repository.commit(
+            TransactionDraft(amount: 22200), source: .receipt, receiptImage: image
+        )
+        #expect(withImage.receiptImageData == image)
+        #expect(withImage.source == .receipt)
+
+        let without = try repository.commit(TransactionDraft(amount: 1000), source: .manual)
+        #expect(without.receiptImageData == nil)
+    }
+
     @Test("Lokasi dari CapturedPlace tersimpan di transaksi")
     func commitAttachesPlace() throws {
         let context = try makeContext()
