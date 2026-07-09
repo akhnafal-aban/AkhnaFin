@@ -1,6 +1,7 @@
 # PLAN-002 — Fase B: Receipt Screenshot via Shortcut
 
-- **Status:** Aktif (gerbang A6 lulus 2026-07-06)
+- **Status:** Selesai (implementasi + unit + sim, 2026-07-09) — gerbang device (B5) menunggu checklist user
+- **Catatan pivot:** parser resi = heuristik deterministik `ReceiptHeuristics`, BUKAN Foundation Models — FM menolak semua prompt berisi teks Indonesia (`unsupportedLanguageOrLocale`, empiris; amplop English pun gagal). Bekerja tanpa Apple Intelligence.
 - **Dibuat:** 2026-07-04
 - **Induk:** PLAN-000-master-roadmap
 

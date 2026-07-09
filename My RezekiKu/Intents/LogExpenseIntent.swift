@@ -48,7 +48,7 @@ struct LogExpenseIntent: AppIntent {
         // Konfirmasi-dulu dengan snippet interaktif (A3): kartu ringkasan +
         // tombol "Edit di App". Draft di-stash agar snippet bisa merender
         // dan jalur edit bisa handoff ke app.
-        PendingDraftStore.stash(draft)
+        PendingDraftStore.stash(draft, source: .appIntent)
         do {
             try await requestConfirmation(
                 dialog: "Catat \(DraftSummary.text(of: draft))?",
