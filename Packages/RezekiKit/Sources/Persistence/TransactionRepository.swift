@@ -54,12 +54,14 @@ public final class TransactionRepository {
 
     // MARK: - Commit draft (muara pipeline capture)
 
-    /// Ubah draft hasil parsing menjadi `MoneyTransaction` tersimpan; lokasi opsional ditempelkan di sini.
+    /// Ubah draft hasil parsing menjadi `MoneyTransaction` tersimpan;
+    /// lokasi & gambar resi opsional ditempelkan di sini.
     @discardableResult
     public func commit(
         _ draft: TransactionDraft,
         source: EntrySource,
-        place: CapturedPlace? = nil
+        place: CapturedPlace? = nil,
+        receiptImage: Data? = nil
     ) throws -> MoneyTransaction {
         let interval = persistenceSignposter.beginInterval("commit")
         defer { persistenceSignposter.endInterval("commit", interval) }
@@ -79,6 +81,7 @@ public final class TransactionRepository {
             transaction.longitude = place.longitude
             transaction.placeName = place.placeName
         }
+        transaction.receiptImageData = receiptImage
         context.insert(transaction)
         try context.save()
         return transaction

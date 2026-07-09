@@ -81,7 +81,7 @@ struct QuickAddView: View {
         .keyboardDismissable()
         .sheet(item: $pending) { pending in
             TransactionFormView(
-                mode: .confirmDraft(pending.draft, source: .quickAdd),
+                mode: .confirmDraft(pending.draft, source: .quickAdd, receiptImage: nil),
                 repository: repository
             ) {
                 input = ""
