@@ -51,7 +51,7 @@ struct LogExpenseIntent: AppIntent {
         PendingDraftStore.stash(draft)
         do {
             try await requestConfirmation(
-                dialog: "Catat \(Self.summary(of: draft))?",
+                dialog: "Catat \(DraftSummary.text(of: draft))?",
                 snippetIntent: ConfirmExpenseSnippetIntent()
             )
         } catch {
@@ -70,13 +70,7 @@ struct LogExpenseIntent: AppIntent {
             return .result(dialog: "Draft benar, tapi gagal menyimpan. Coba lagi dari dalam app.")
         }
         intentLog.info("LogExpense tersimpan")
-        return .result(dialog: "Tercatat: \(Self.summary(of: draft)).")
-    }
-
-    private static func summary(of draft: TransactionDraft) -> String {
-        let amount = CurrencyFormatter.string(from: draft.amount)
-        let label = [draft.merchant, draft.note].first { !$0.isEmpty } ?? draft.categoryName
-        return label.isEmpty ? amount : "\(amount) — \(label)"
+        return .result(dialog: "Tercatat: \(DraftSummary.text(of: draft)).")
     }
 }
 
@@ -90,6 +84,15 @@ struct RezekiShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Catat Pengeluaran",
             systemImageName: "wand.and.stars"
+        )
+        AppShortcut(
+            intent: LogReceiptIntent(),
+            phrases: [
+                "Catat resi di \(.applicationName)",
+                "Log receipt in \(.applicationName)"
+            ],
+            shortTitle: "Catat Resi",
+            systemImageName: "doc.viewfinder"
         )
     }
 }
