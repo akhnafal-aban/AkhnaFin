@@ -61,7 +61,7 @@ extension ParsedTransaction {
         let daysBack = max(0, daysAgo)
         let date = calendar.date(byAdding: .day, value: -daysBack, to: now) ?? now
         return TransactionDraft(
-            amount: Self.rupiah(from: amount),
+            amount: sanitizedRupiah(amount),
             type: TransactionType(rawValue: type) ?? .expense,
             date: date,
             note: note,
@@ -71,15 +71,17 @@ extension ParsedTransaction {
             rawInput: rawInput
         )
     }
-
-    /// Double → Decimal dibulatkan 2 digit (hindari artefak floating-point), minimum 0.
-    private static func rupiah(from amount: Double) -> Decimal {
-        var value = Decimal(max(0, amount))
-        var rounded = Decimal()
-        NSDecimalRound(&rounded, &value, 2, .plain)
-        return rounded
-    }
 }
+
+/// Double → Decimal dibulatkan 2 digit (hindari artefak floating-point), minimum 0.
+/// Dipakai mapper kalimat & resi — satu sumber kebenaran.
+func sanitizedRupiah(_ amount: Double) -> Decimal {
+    var value = Decimal(max(0, amount))
+    var rounded = Decimal()
+    NSDecimalRound(&rounded, &value, 2, .plain)
+    return rounded
+}
+
 
 /// Parser natural language berbasis Foundation Models (on-device, iOS 26+).
 ///
@@ -138,6 +140,30 @@ public struct FoundationModelsParser: TransactionParsing {
             drafts.append(try await parse(String(line)))
         }
         return drafts
+    }
+
+    /// Resi: mesin DETERMINISTIK (`ReceiptHeuristics`), bukan LLM — Foundation
+    /// Models menolak semua prompt berisi teks Indonesia (`unsupportedLanguage
+    /// OrLocale`, terverifikasi empiris, amplop English pun tidak lolos), dan
+    /// resi Indonesia pasti berisi kata Indonesia. Bonus: jalur ini bekerja
+    /// meski Apple Intelligence tidak tersedia.
+    public func parseReceipt(text: String) async throws -> TransactionDraft {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw TransactionParsingError.parsingFailed(
+                "Resi tidak terbaca. Coba screenshot ulang dengan lebih jelas."
+            )
+        }
+        let interval = parserSignposter.beginInterval("parse")
+        defer { parserSignposter.endInterval("parse", interval) }
+        guard let draft = ReceiptHeuristics.draft(from: trimmed) else {
+            parserLog.error("parseReceipt: total tidak ditemukan (\(trimmed.count) chars OCR)")
+            throw TransactionParsingError.parsingFailed(
+                "Tidak menemukan nominal total di resi. Pastikan baris TOTAL terlihat di screenshot."
+            )
+        }
+        parserLog.info("parseReceipt sukses (heuristik, \(trimmed.count) chars OCR)")
+        return draft
     }
 
     private var instructions: String {
