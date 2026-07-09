@@ -46,4 +46,8 @@ public struct MockTransactionParser: TransactionParsing {
         }
         return drafts
     }
+
+    public func parseReceipt(text: String) async throws -> TransactionDraft {
+        try await parse(text)
+    }
 }
