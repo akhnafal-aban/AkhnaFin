@@ -6,7 +6,7 @@ Satu subsystem: `com.aban.My-RezekiKu`. Kategori:
 
 | Kategori | Sumber | Isi |
 |---|---|---|
-| `Parser` | `Services/FoundationModelsParser` | sukses/gagal parse, error FM verbatim, signpost `parse` (durasi inference) |
+| `Parser` | `Services/FoundationModelsParser`, `VisionReceiptScanner` | sukses/gagal parse, error FM verbatim, signpost `parse` (inference kalimat / heuristik resi) & `ocr` (Vision) |
 | `Persistence` | `AppContainer`, `TransactionRepository` | fallback CloudKit→lokal, signpost `commit` |
 | `Intent` | `Intents/` (Fase A2+) | tahapan intent, error granular |
 
@@ -50,4 +50,7 @@ Instruments → template "os_signpost" → filter subsystem `com.aban.My-RezekiK
 
 - Build/test CLI wajib `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 - FM inference tidak jalan di simulator (`ModelManagerError 1026`) — uji live parse hanya di device.
-- FM tidak dukung Bahasa Indonesia — input English.
+- FM tidak dukung Bahasa Indonesia — input English. Lebih jauh: FM MENOLAK prompt
+  yang MENGANDUNG teks Indonesia (`unsupportedLanguageOrLocale`) — karena itu parser
+  RESI memakai heuristik deterministik (`ReceiptHeuristics`), bukan LLM, dan bekerja
+  tanpa Apple Intelligence.

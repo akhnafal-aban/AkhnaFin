@@ -51,7 +51,7 @@ struct LogReceiptIntent: AppIntent {
         }
 
         // Konfirmasi-dulu di luar app: snippet ringkasan + jalur Edit di App (A3).
-        PendingDraftStore.stash(draft, receiptImage: imageData)
+        PendingDraftStore.stash(draft, source: .receipt, receiptImage: imageData)
         do {
             try await requestConfirmation(
                 dialog: "Catat \(DraftSummary.text(of: draft))?",

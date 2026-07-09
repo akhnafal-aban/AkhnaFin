@@ -10,22 +10,26 @@
 //
 
 import Foundation
+import RezekiCore
 import ServiceInterfaces
 
 enum PendingDraftStore {
+    /// Isi slot: draft + asal intent (source EKSPLISIT — jangan disimpulkan
+    /// dari keberadaan gambar; review B6).
+    private struct Payload: Codable {
+        let draft: TransactionDraft
+        let source: EntrySource
+    }
+
     // MARK: Slot "confirming" (dipakai snippet untuk render ringkasan)
 
-    static func stash(_ draft: TransactionDraft, receiptImage: Data? = nil) {
-        write(draft, to: stashURL)
+    static func stash(_ draft: TransactionDraft, source: EntrySource, receiptImage: Data? = nil) {
+        write(Payload(draft: draft, source: source), to: stashURL)
         writeImage(receiptImage, to: stashImageURL)
     }
 
     static func currentStash() -> TransactionDraft? {
-        read(from: stashURL)
-    }
-
-    static func currentStashImage() -> Data? {
-        try? Data(contentsOf: stashImageURL)
+        read(from: stashURL)?.draft
     }
 
     static func clearStash() {
@@ -35,18 +39,22 @@ enum PendingDraftStore {
 
     // MARK: Slot "edit-request" (handoff ke app)
 
-    static func requestEditInApp(_ draft: TransactionDraft, receiptImage: Data? = nil) {
-        write(draft, to: editRequestURL)
-        writeImage(receiptImage, to: editRequestImageURL)
+    /// Dipanggil tombol "Edit di App": salin isi slot konfirmasi (draft+source+gambar)
+    /// ke slot handoff — LogExpense/LogReceipt yang batal tetap membersihkan slot
+    /// konfirmasi tanpa menyentuh handoff.
+    static func promoteStashToEditRequest() {
+        guard let payload = read(from: stashURL) else { return }
+        write(payload, to: editRequestURL)
+        writeImage(try? Data(contentsOf: stashImageURL), to: editRequestImageURL)
     }
 
     /// Baca sekaligus hapus — app memanggil ini saat menjadi aktif.
-    static func consumeEditRequest() -> (draft: TransactionDraft, receiptImage: Data?)? {
-        guard let draft = read(from: editRequestURL) else { return nil }
+    static func consumeEditRequest() -> (draft: TransactionDraft, source: EntrySource, receiptImage: Data?)? {
+        guard let payload = read(from: editRequestURL) else { return nil }
         let image = try? Data(contentsOf: editRequestImageURL)
         try? FileManager.default.removeItem(at: editRequestURL)
         try? FileManager.default.removeItem(at: editRequestImageURL)
-        return (draft, image)
+        return (payload.draft, payload.source, image)
     }
 
     // MARK: - IO
@@ -72,13 +80,13 @@ enum PendingDraftStore {
         }
     }
 
-    private static func write(_ draft: TransactionDraft, to url: URL) {
-        guard let data = try? JSONEncoder().encode(draft) else { return }
+    private static func write(_ payload: Payload, to url: URL) {
+        guard let data = try? JSONEncoder().encode(payload) else { return }
         try? data.write(to: url, options: .atomic)
     }
 
-    private static func read(from url: URL) -> TransactionDraft? {
+    private static func read(from url: URL) -> Payload? {
         guard let data = try? Data(contentsOf: url) else { return nil }
-        return try? JSONDecoder().decode(TransactionDraft.self, from: data)
+        return try? JSONDecoder().decode(Payload.self, from: data)
     }
 }
