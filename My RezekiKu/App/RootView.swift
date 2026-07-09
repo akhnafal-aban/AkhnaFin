@@ -41,11 +41,10 @@ struct RootView: View {
 
     private func consumeEditRequest() {
         if let pending = PendingDraftStore.consumeEditRequest() {
-            // Draft dari intent resi membawa gambar → sumbernya .receipt.
             handoffDraft = HandoffDraft(
                 draft: pending.draft,
                 receiptImage: pending.receiptImage,
-                source: pending.receiptImage == nil ? .appIntent : .receipt
+                source: pending.source
             )
         }
     }
