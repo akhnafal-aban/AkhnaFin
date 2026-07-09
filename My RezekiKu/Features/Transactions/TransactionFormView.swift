@@ -11,7 +11,7 @@ struct TransactionFormView: View {
     enum Mode {
         case add
         case edit(MoneyTransaction)
-        case confirmDraft(TransactionDraft, source: EntrySource)
+        case confirmDraft(TransactionDraft, source: EntrySource, receiptImage: Data?)
     }
 
     @Environment(\.dismiss) private var dismiss
@@ -48,7 +48,7 @@ struct TransactionFormView: View {
                 transaction.type, transaction.amount, transaction.date,
                 transaction.merchant, transaction.note, transaction.category
             )
-        case .confirmDraft(let draft, _):
+        case .confirmDraft(let draft, _, _):
             initial = (draft.type, draft.amount, draft.date, draft.merchant, draft.note, nil)
         }
         _type = State(initialValue: initial.0)
@@ -121,12 +121,12 @@ struct TransactionFormView: View {
     }
 
     private var rawInput: String {
-        if case .confirmDraft(let draft, _) = mode { draft.rawInput } else { "" }
+        if case .confirmDraft(let draft, _, _) = mode { draft.rawInput } else { "" }
     }
 
     /// Preselect kategori dari saran parser — sekali saja (mode confirmDraft).
     private func resolveSuggestedCategoryOnce() {
-        guard case .confirmDraft(let draft, _) = mode, !didResolveSuggestion else { return }
+        guard case .confirmDraft(let draft, _, _) = mode, !didResolveSuggestion else { return }
         didResolveSuggestion = true
         if !draft.subcategoryName.isEmpty,
            let sub = try? repository.resolveCategory(named: draft.subcategoryName, kind: type) {
@@ -159,7 +159,7 @@ struct TransactionFormView: View {
                 transaction.category = category
                 try repository.save()
 
-            case .confirmDraft(let draft, let source):
+            case .confirmDraft(let draft, let source, let receiptImage):
                 // Draft final dari state hasil editan user — tetap lewat pipeline commit().
                 var categoryName = ""
                 var subcategoryName = ""
@@ -176,7 +176,7 @@ struct TransactionFormView: View {
                     merchant: merchant, categoryName: categoryName,
                     subcategoryName: subcategoryName, rawInput: draft.rawInput
                 )
-                try repository.commit(finalDraft, source: source)
+                try repository.commit(finalDraft, source: source, receiptImage: receiptImage)
             }
             onCommitted()
             dismiss()
@@ -195,7 +195,8 @@ struct TransactionFormView: View {
                 amount: 20000, note: "bakso", merchant: "Kantin Kantor",
                 categoryName: "Main Food", rawInput: "buy meatballs 20k"
             ),
-            source: .quickAdd
+            source: .quickAdd,
+            receiptImage: nil
         ),
         repository: TransactionRepository(context: container.mainContext)
     )

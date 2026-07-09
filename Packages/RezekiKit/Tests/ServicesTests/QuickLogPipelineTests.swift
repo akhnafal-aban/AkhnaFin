@@ -34,6 +34,32 @@ struct QuickLogPipelineTests {
         #expect(draft.rawInput == "coffee 8k")
     }
 
+    @Test("Jalur resi: OCR mock → parseReceipt; scanner lambat → timedOut; tanpa scanner → error jelas")
+    func receiptPath() async throws {
+        let ocr = "TOKO MAJU JAYA\nNasi Goreng 25.000\nTOTAL 25.000"
+        let pipeline = QuickLogPipeline(
+            parser: MockTransactionParser(),
+            scanner: MockReceiptScanner(text: ocr)
+        )
+        // MockTransactionParser.parseReceipt delegasi ke parse → rawInput = teks OCR.
+        let draft = try await pipeline.parseReceiptDraft(fromImage: Data())
+        #expect(draft.rawInput == ocr)
+
+        let noScanner = QuickLogPipeline(parser: MockTransactionParser())
+        await #expect(throws: QuickLogError.self) {
+            _ = try await noScanner.parseReceiptDraft(fromImage: Data())
+        }
+
+        let slowParser = QuickLogPipeline(
+            parser: MockTransactionParser(delay: .milliseconds(500)),
+            scanner: MockReceiptScanner(),
+            timeout: .milliseconds(30)
+        )
+        await #expect(throws: QuickLogError.timedOut) {
+            _ = try await slowParser.parseReceiptDraft(fromImage: Data())
+        }
+    }
+
     @Test("Error parser ter-map granular")
     func errorMapping() async {
         let unavailable = QuickLogPipeline(

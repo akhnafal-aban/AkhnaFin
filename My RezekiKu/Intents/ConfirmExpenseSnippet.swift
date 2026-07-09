@@ -32,7 +32,7 @@ struct EditExpenseInAppIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult {
         if let draft = PendingDraftStore.currentStash() {
-            PendingDraftStore.requestEditInApp(draft)
+            PendingDraftStore.requestEditInApp(draft, receiptImage: PendingDraftStore.currentStashImage())
         }
         return .result()
     }
