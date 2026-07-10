@@ -60,15 +60,20 @@ enum ReceiptHeuristics {
         return best?.amount
     }
 
-    /// Angka format Indonesia: "121.148" (titik ribuan), "30.000,50" (koma desimal), prefix "Rp".
+    /// Angka nominal di akhir baris. Dua bentuk: bertitik ribuan "121.148" /
+    /// "30.000,50" (prefix Rp opsional, trailing `,-`/`-` opsional), ATAU
+    /// digit polos tanpa pemisah "25000" (struk thermal/POS digital).
+    private static let amountPattern =
+        "(?:rp\\.?\\s*)?([0-9]{1,3}(?:[.,][0-9]{3})+(?:,[0-9]{1,2})?|[0-9]{3,9}(?:,[0-9]{1,2})?)[\\s,\\-]*$"
+
     private static func amount(in line: String) -> Decimal? {
         guard let match = line.range(
-            of: "(?:rp\\.?\\s*)?([0-9]{1,3}(?:[.,][0-9]{3})*(?:,[0-9]{1,2})?)\\s*$",
+            of: amountPattern,
             options: [.regularExpression, .caseInsensitive]
         ) else { return nil }
         var digits = String(line[match])
             .replacingOccurrences(of: "(?i)rp\\.?\\s*", with: "", options: .regularExpression)
-            .trimmingCharacters(in: .whitespaces)
+            .trimmingCharacters(in: CharacterSet(charactersIn: " ,-"))
         // Koma terakhir diikuti 1–2 digit = desimal; sisanya pemisah ribuan.
         if let commaRange = digits.range(of: ",[0-9]{1,2}$", options: .regularExpression) {
             let decimalPart = digits[commaRange].replacingOccurrences(of: ",", with: ".")

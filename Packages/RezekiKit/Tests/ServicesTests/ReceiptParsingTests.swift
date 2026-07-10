@@ -70,6 +70,16 @@ struct ReceiptParsingTests {
         #expect(rp.amount == 45000)
     }
 
+    @Test("Nominal tanpa pemisah ribuan & trailing Rp/,- (struk thermal/POS)")
+    func plainDigitsAndTrailing() async throws {
+        // Tanpa titik ribuan.
+        #expect(try await parser.parseReceipt(text: "TOKO X\nTOTAL 25000").amount == 25000)
+        #expect(try await parser.parseReceipt(text: "TOKO Y\nTOTAL: 5000").amount == 5000)
+        // Trailing ",-" gaya Indonesia.
+        #expect(try await parser.parseReceipt(text: "TOKO Z\nTOTAL Rp30.000,-").amount == 30000)
+        #expect(try await parser.parseReceipt(text: "TOKO W\nGRAND TOTAL 125000 ,-").amount == 125000)
+    }
+
     @Test("rawInput dipotong 500 chars")
     func rawInputTruncated() async throws {
         let filler = String(repeating: "Item Panjang 1.000\n", count: 60)
