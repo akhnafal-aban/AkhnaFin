@@ -12,7 +12,7 @@ Konvensi dokumen plan (berlaku semua plan berikutnya):
 
 ## 1. Konteks
 
-**My RezekiKu** — app finansial iOS 26 pribadi (solo dev). Fase 0–2 selesai: fondasi modular + CRUD manual + NL parser (Foundation Models, input English) + App Intent Siri. User uji di **iPhone 17 fisik → 3 bug serius** pada fitur inti. Keputusan user:
+**AkhnaFin** — app finansial iOS 26 pribadi (solo dev). Fase 0–2 selesai: fondasi modular + CRUD manual + NL parser (Foundation Models, input English) + App Intent Siri. User uji di **iPhone 17 fisik → 3 bug serius** pada fitur inti. Keputusan user:
 1. Perbaiki total kualitas fitur inti sebelum fitur baru — maksimalkan testing & debugging.
 2. Tambah skenario: screenshot resi via Shortcut → analisis → konfirmasi di luar app.
 3. **Berhenti setelah 2 fase** (A & B). Fitur lain → backlog.
@@ -23,8 +23,8 @@ Konvensi dokumen plan (berlaku semua plan berikutnya):
 Commit: `2d11ef8` fondasi → `6dc16b7` Fase 0 → `3e35255` refactor logic-only → `b7db52f` CLAUDE.md → `37df351` review fixes → `765f342` Fase 1 parser → `1c77517` Fase 2 intent.
 
 **Arsitektur (final, jangan ubah tanpa persetujuan user):**
-- App target = SEMUA UI + composition root: `App/` (My_RezekiKuApp, AppContainer, AppDependencies, RootView), `DesignSystem/`, `Features/Transactions/`, `Features/QuickAdd/`, `Intents/`.
-- `Packages/RezekiKit` = logic only: `RezekiCore`, `ServiceInterfaces`, `Persistence`, `Services` (`import FoundationModels` HANYA di sini).
+- App target = SEMUA UI + composition root: `App/` (AkhnaFinApp, AppContainer, AppDependencies, RootView), `DesignSystem/`, `Features/Transactions/`, `Features/QuickAdd/`, `Intents/`.
+- `Packages/AkhnaFinKit` = logic only: `AkhnaFinCore`, `ServiceInterfaces`, `Persistence`, `Services` (`import FoundationModels` HANYA di sini).
 - Pipeline sakral: `input → TransactionParsing → TransactionDraft → konfirmasi user → TransactionRepository.commit()`.
 - 19 unit test hijau.
 

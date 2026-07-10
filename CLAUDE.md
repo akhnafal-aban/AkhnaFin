@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Proyek
 
-**My RezekiKu** — app finansial iOS pribadi (solo dev) yang menyelesaikan satu masalah: mencatat pengeluaran itu ribet, jadi tidak dilakukan. Solusinya: capture nyaris tanpa friksi lewat banyak jalur input (App Intent/Siri, natural language via Foundation Models, suara via Speech, foto struk via Vision, batch entry) yang **semuanya bermuara ke satu pipeline**:
+**AkhnaFin** — app finansial iOS pribadi (solo dev) yang menyelesaikan satu masalah: mencatat pengeluaran itu ribet, jadi tidak dilakukan. Solusinya: capture nyaris tanpa friksi lewat banyak jalur input (App Intent/Siri, natural language via Foundation Models, suara via Speech, foto struk via Vision, batch entry) yang **semuanya bermuara ke satu pipeline**:
 
 ```
 input (teks/suara/gambar) → TransactionParsing → TransactionDraft (editable)
@@ -19,7 +19,7 @@ Hasil AI **selalu** menjadi draft yang bisa diedit sebelum disimpan — jangan p
 
 ```bash
 # Test package (cara tercepat memvalidasi logic — detik, tanpa simulator)
-cd Packages/RezekiKit && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+cd Packages/AkhnaFinKit && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
 # Satu suite / satu test (Swift Testing)
 ... swift test --filter "PersistenceTests"
@@ -27,12 +27,12 @@ cd Packages/RezekiKit && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Develope
 
 # Build app (simulator)
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild \
-  -project "My RezekiKu.xcodeproj" -scheme "My RezekiKu" \
+  -project "AkhnaFin.xcodeproj" -scheme "AkhnaFin" \
   -destination 'generic/platform=iOS Simulator' build
 
 # Jalankan di simulator (app path ada di DerivedData .../Debug-iphonesimulator/)
-xcrun simctl boot <UDID> && xcrun simctl install <UDID> "<path>/My RezekiKu.app" \
-  && xcrun simctl launch <UDID> com.aban.My-RezekiKu
+xcrun simctl boot <UDID> && xcrun simctl install <UDID> "<path>/AkhnaFin.app" \
+  && xcrun simctl launch <UDID> com.aban.AkhnaFin
 ```
 
 Urutan verifikasi setiap perubahan: `swift test` → `xcodebuild build` → launch simulator + screenshot → commit git per increment.
@@ -42,15 +42,15 @@ Urutan verifikasi setiap perubahan: `swift test` → `xcodebuild build` → laun
 **Package = logic saja; UI = app target.** User secara eksplisit menolak UI di dalam package.
 
 ```
-My RezekiKu/                 ← app target: SEMUA UI + composition root
-  App/                       My_RezekiKuApp (ModelContainer CloudKit→localOnly fallback,
+AkhnaFin/                 ← app target: SEMUA UI + composition root
+  App/                       AkhnaFinApp (ModelContainer CloudKit→localOnly fallback,
                              seeding), AppDependencies (DI/wiring), RootView (TabView)
   DesignSystem/              komponen reusable (AmountField, CategoryPicker, TransactionRow)
   Features/<Nama>/           satu folder per fitur (Transactions/, nanti QuickAdd/, Voice/, …)
   Intents/                   (Fase 2) App Intents — wajib di app bundle
 
-Packages/RezekiKit/          ← local package: LOGIC ONLY, semua target punya .testTarget
-  RezekiCore                 @Model (MoneyTransaction, TransactionCategory), enums,
+Packages/AkhnaFinKit/          ← local package: LOGIC ONLY, semua target punya .testTarget
+  AkhnaFinCore                 @Model (MoneyTransaction, TransactionCategory), enums,
                              CurrencyFormatter, TransactionGrouping — tanpa dependensi
   ServiceInterfaces          TransactionDraft, CapturedPlace, protokol (TransactionParsing,
                              LocationCapturing, SpeechTranscribing, ReceiptScanning) + mocks
@@ -69,7 +69,7 @@ Aturan boundary (di-enforce compiler, pertahankan):
 
 ## SwiftData + CloudKit (pelanggaran = crash saat init container)
 
-Semua `@Model`: atribut optional **atau** punya default; relasi optional **dan** punya inverse; **tanpa** `@Attribute(.unique)`; enum harus `Codable`. Container: `iCloud.com.aban.My-RezekiKu`. Sync hanya bisa diuji di device fisik yang login iCloud; inspeksi via CloudKit Console (environment Development).
+Semua `@Model`: atribut optional **atau** punya default; relasi optional **dan** punya inverse; **tanpa** `@Attribute(.unique)`; enum harus `Codable`. Container: `iCloud.com.aban.AkhnaFin`. Sync hanya bisa diuji di device fisik yang login iCloud; inspeksi via CloudKit Console (environment Development).
 
 ## Penamaan — pelajaran nyata dari proyek ini
 

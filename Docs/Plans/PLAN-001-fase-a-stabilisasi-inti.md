@@ -25,7 +25,7 @@ Tujuan: tutup 3 bug device (iPhone 17); parser terukur; intent tahan banting. Ke
 
 ## Langkah
 
-**A0. Handoff & diagnosa.** Docs plan bernomor (PLAN-000/001/002) + logging rapi + `Docs/DEBUGGING.md`. Logging: subsystem `com.aban.My-RezekiKu`, kategori `Parser`/`Persistence`/`Intent`; `OSSignposter` durasi parse & commit. DEBUGGING.md: cara ambil log device (Console.app filter subsystem, `log collect --device`).
+**A0. Handoff & diagnosa.** Docs plan bernomor (PLAN-000/001/002) + logging rapi + `Docs/DEBUGGING.md`. Logging: subsystem `com.aban.AkhnaFin`, kategori `Parser`/`Persistence`/`Intent`; `OSSignposter` durasi parse & commit. DEBUGGING.md: cara ambil log device (Console.app filter subsystem, `log collect --device`).
 
 **A1. BUG-3 keyboard.** `.scrollDismissesKeyboard(.immediately)` + `ToolbarItemGroup(placement: .keyboard)` "Selesai", pada `QuickAddView`, `ConfirmDraftView`, `AddEditTransactionView`. Verifikasi simulator (computer-use) + screenshot.
 

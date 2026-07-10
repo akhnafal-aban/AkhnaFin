@@ -8,7 +8,7 @@ jalankan Shortcut → konfirmasi muncul **di luar app** → tersimpan + gambar r
 Di app **Shortcuts** → `+` buat shortcut baru:
 
 1. Tambah aksi **"Take Screenshot"** (kategori Media).
-2. Tambah aksi **"Catat Resi"** (dari My RezekiKu). Parameter *Gambar Resi* otomatis
+2. Tambah aksi **"Catat Resi"** (dari AkhnaFin). Parameter *Gambar Resi* otomatis
    terisi output Screenshot — bila tidak, tap parameternya → pilih variabel **Screenshot**.
 3. Beri nama mis. **"Catat Resi"**, tambahkan ke Home Screen / Action Button /
    Back Tap (Settings → Accessibility → Touch → Back Tap) untuk akses satu-ketukan.
@@ -38,4 +38,4 @@ tidak butuh Apple Intelligence) → kartu konfirmasi berisi total/merchant/kateg
 - Tanggal transaksi di-set saat pencatatan (bukan tanggal cetak resi) — koreksi di
   layar konfirmasi bila perlu (tombol **Edit di App**).
 - Bermasalah? Ambil log: lihat `Docs/DEBUGGING.md` (filter subsystem
-  `com.aban.My-RezekiKu`, kategori `Intent`/`Parser`).
+  `com.aban.AkhnaFin`, kategori `Intent`/`Parser`).
