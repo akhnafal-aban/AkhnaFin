@@ -87,6 +87,69 @@ public final class TransactionRepository {
         return transaction
     }
 
+    // MARK: - Kategori CRUD
+
+    public enum CategoryError: LocalizedError, Equatable {
+        case builtInNotDeletable
+        case emptyName
+
+        public var errorDescription: String? {
+            switch self {
+            case .builtInNotDeletable: "Kategori bawaan tidak bisa dihapus."
+            case .emptyName: "Nama kategori tidak boleh kosong."
+            }
+        }
+    }
+
+    public func fetchCategories() throws -> [TransactionCategory] {
+        try context.fetch(FetchDescriptor<TransactionCategory>(
+            sortBy: [SortDescriptor(\.name)]
+        ))
+    }
+
+    @discardableResult
+    public func addCategory(
+        name: String,
+        iconName: String = "tag",
+        colorHex: String = "",
+        kind: TransactionType,
+        parent: TransactionCategory? = nil
+    ) throws -> TransactionCategory {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw CategoryError.emptyName }
+        // Subkategori mewarisi jenis induknya (konsistensi hierarki).
+        let category = TransactionCategory(
+            name: trimmed, iconName: iconName, colorHex: colorHex,
+            kind: parent?.kind ?? kind, isBuiltIn: false, parent: parent
+        )
+        context.insert(category)
+        try context.save()
+        return category
+    }
+
+    public func updateCategory(
+        _ category: TransactionCategory,
+        name: String,
+        iconName: String,
+        colorHex: String
+    ) throws {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw CategoryError.emptyName }
+        category.name = trimmed
+        category.iconName = iconName
+        category.colorHex = colorHex
+        try context.save()
+    }
+
+    /// Hapus kategori CUSTOM. Bawaan dilindungi (seeder akan menambahkannya lagi →
+    /// membingungkan). Transaksi & subkategori yang menunjuk ke sini ter-nullify
+    /// otomatis (deleteRule .nullify di model) — subkategori jadi level teratas.
+    public func deleteCategory(_ category: TransactionCategory) throws {
+        guard !category.isBuiltIn else { throw CategoryError.builtInNotDeletable }
+        context.delete(category)
+        try context.save()
+    }
+
     // MARK: - Resolusi kategori
 
     /// Subkategori diprioritaskan; bila tidak ketemu, jatuh ke kategori utama.

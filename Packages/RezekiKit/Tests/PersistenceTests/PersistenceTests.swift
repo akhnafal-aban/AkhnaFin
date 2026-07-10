@@ -73,6 +73,47 @@ struct PersistenceTests {
         #expect(try repository.commit(missDraft, source: .manual).category == nil)
     }
 
+    @Test("Kategori CRUD: tambah induk+sub, edit, hapus custom (transaksi ter-nullify)")
+    func categoryCRUD() throws {
+        let context = try makeContext()
+        let repository = TransactionRepository(context: context)
+
+        // Tambah induk + subkategori (mewarisi kind induk).
+        let lifestyle = try repository.addCategory(name: "Hobi", iconName: "star", kind: .expense)
+        let sub = try repository.addCategory(name: "Fotografi", kind: .income, parent: lifestyle)
+        #expect(sub.parent?.name == "Hobi")
+        #expect(sub.kind == .expense, "subkategori mewarisi kind induk, bukan argumen")
+        #expect(try repository.fetchCategories().count == 2)
+
+        // Edit.
+        try repository.updateCategory(lifestyle, name: "Hobi & Seni", iconName: "paintbrush", colorHex: "#111")
+        #expect(lifestyle.name == "Hobi & Seni")
+        #expect(lifestyle.iconName == "paintbrush")
+
+        // Transaksi menunjuk kategori custom → nullify saat kategori dihapus.
+        let tx = MoneyTransaction(amount: 1000, category: sub)
+        context.insert(tx)
+        try context.save()
+        try repository.deleteCategory(sub)
+        #expect(tx.category == nil)
+        #expect(try repository.fetchCategories().count == 1)
+    }
+
+    @Test("Kategori bawaan tak bisa dihapus; nama kosong ditolak")
+    func categoryGuards() throws {
+        let context = try makeContext()
+        try CategorySeeder.seedIfNeeded(context: context)
+        let repository = TransactionRepository(context: context)
+
+        let builtIn = try #require(try repository.fetchCategories().first { $0.isBuiltIn })
+        #expect(throws: TransactionRepository.CategoryError.builtInNotDeletable) {
+            try repository.deleteCategory(builtIn)
+        }
+        #expect(throws: TransactionRepository.CategoryError.emptyName) {
+            try repository.addCategory(name: "   ", kind: .expense)
+        }
+    }
+
     @Test("Gambar resi tersimpan saat commit; default nil")
     func commitAttachesReceiptImage() throws {
         let context = try makeContext()
