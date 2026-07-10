@@ -1,8 +1,8 @@
-# Debugging My RezekiKu
+# Debugging AkhnaFin
 
 ## Logging
 
-Satu subsystem: `com.aban.My-RezekiKu`. Kategori:
+Satu subsystem: `com.aban.AkhnaFin`. Kategori:
 
 | Kategori | Sumber | Isi |
 |---|---|---|
@@ -14,7 +14,7 @@ Satu subsystem: `com.aban.My-RezekiKu`. Kategori:
 
 **Live (Console.app):**
 1. iPhone tersambung USB/Wi-Fi → buka Console.app → pilih device di sidebar.
-2. Filter: `subsystem:com.aban.My-RezekiKu` (ketik di search, pilih "Subsystem").
+2. Filter: `subsystem:com.aban.AkhnaFin` (ketik di search, pilih "Subsystem").
 3. Start streaming → reproduksi bug → pause → salin baris relevan.
 
 **Retroaktif (sysdiagnose ringan):**
@@ -27,13 +27,13 @@ open ~/Desktop/rezekiku.logarchive   # buka di Console.app, filter subsystem sam
 **Simulator:**
 ```bash
 xcrun simctl spawn <UDID> log show --last 5m \
-  --predicate 'subsystem == "com.aban.My-RezekiKu"' --style compact
+  --predicate 'subsystem == "com.aban.AkhnaFin"' --style compact
 ```
 UDID sim uji: `B0F77E13-3EC1-4674-9F99-AB1591D382A7`.
 
 ## Signpost (durasi parse/commit)
 
-Instruments → template "os_signpost" → filter subsystem `com.aban.My-RezekiKu`. Interval `parse` (kategori Parser) = durasi inference FM; `commit` (Persistence) = durasi resolusi kategori + save. Catat p50/p95 hasil pengukuran device di sini:
+Instruments → template "os_signpost" → filter subsystem `com.aban.AkhnaFin`. Interval `parse` (kategori Parser) = durasi inference FM; `commit` (Persistence) = durasi resolusi kategori + save. Catat p50/p95 hasil pengukuran device di sini:
 
 | Tanggal | Interval | p50 | p95 | Catatan |
 |---|---|---|---|---|
@@ -42,7 +42,7 @@ Instruments → template "os_signpost" → filter subsystem `com.aban.My-RezekiK
 ## Reproduksi bug intent (BUG-2)
 
 1. Pastikan app TIDAK di foreground (kill dari app switcher) — intent jalan headless.
-2. Jalankan Shortcut/Siri "Log expense in My RezekiKu" dgn kalimat English.
+2. Jalankan Shortcut/Siri "Log expense in AkhnaFin" dgn kalimat English.
 3. Amati: stuck/error → segera `log collect --device --last 5m`.
 4. Cari: kategori `Intent` tahapan terakhir sebelum diam; error FM di `Parser`; pesan `LaunchServices`/`runningboardd` soal terminasi (budget waktu).
 
