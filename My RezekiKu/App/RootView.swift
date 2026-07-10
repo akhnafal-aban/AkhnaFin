@@ -22,7 +22,7 @@ struct RootView: View {
                 QuickAddView(parser: dependencies.parser, repository: dependencies.repository)
             }
             Tab("Pengaturan", systemImage: "gearshape") {
-                SettingsPlaceholderView()
+                SettingsView(repository: dependencies.repository)
             }
         }
         // Jalur "Edit di App" dari snippet intent (A3): konsumsi draft handoff
@@ -58,21 +58,4 @@ private struct HandoffDraft: Identifiable {
     let draft: TransactionDraft
     let receiptImage: Data?
     let source: EntrySource
-}
-
-/// Placeholder — diganti SettingsFeature (kelola kategori, izin, status iCloud) pada fasenya.
-private struct SettingsPlaceholderView: View {
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    LabeledContent("Versi", value: "1.0")
-                    LabeledContent("Penyimpanan", value: "iCloud")
-                } header: {
-                    Text("Tentang")
-                }
-            }
-            .navigationTitle("Pengaturan")
-        }
-    }
 }
