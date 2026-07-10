@@ -14,6 +14,11 @@ import os
 enum AppContainer {
     private static let logger = Logger(subsystem: "com.aban.My-RezekiKu", category: "Persistence")
 
+    /// Mode penyimpanan yang benar-benar aktif (di-set saat container dibangun) —
+    /// dibaca Settings untuk menampilkan status sync. Valid setelah `shared` diakses.
+    @MainActor
+    private(set) static var activeStorageMode: ModelContainerFactory.StorageMode = .cloudKit
+
     /// Container tunggal per proses (BUG-2a): init CloudKit + seed + dedupe hanya
     /// SEKALI — invocation intent berikutnya memakai instance yang sama, bukan
     /// membangun ulang. `static let` = lazy & thread-safe.
@@ -39,13 +44,18 @@ enum AppContainer {
         return container
     }
 
+    @MainActor
     private static func makeContainer() -> ModelContainer {
         do {
-            return try ModelContainerFactory.make(mode: .cloudKit)
+            let container = try ModelContainerFactory.make(mode: .cloudKit)
+            activeStorageMode = .cloudKit
+            return container
         } catch {
             logger.error("Container CloudKit gagal, fallback ke penyimpanan lokal (sync NONAKTIF): \(String(describing: error), privacy: .public)")
             do {
-                return try ModelContainerFactory.make(mode: .localOnly)
+                let container = try ModelContainerFactory.make(mode: .localOnly)
+                activeStorageMode = .localOnly
+                return container
             } catch {
                 fatalError("Tidak bisa membuat ModelContainer: \(error)")
             }
