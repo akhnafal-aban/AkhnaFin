@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import RezekiCore
+import ServiceInterfaces
 import Persistence
 
 /// Daftar transaksi: section per tanggal, pencarian, swipe edit/hapus.
@@ -14,9 +15,11 @@ struct TransactionListView: View {
     @State private var deleteFailed = false
 
     private let repository: TransactionRepository
+    private let locationService: (any LocationCapturing)?
 
-    init(repository: TransactionRepository) {
+    init(repository: TransactionRepository, locationService: (any LocationCapturing)? = nil) {
         self.repository = repository
+        self.locationService = locationService
     }
 
     private var filteredTransactions: [MoneyTransaction] {
@@ -73,7 +76,7 @@ struct TransactionListView: View {
                 }
             }
             .sheet(isPresented: $isAdding) {
-                TransactionFormView(mode: .add, repository: repository)
+                TransactionFormView(mode: .add, repository: repository, locationService: locationService)
             }
             .sheet(item: $editingTransaction) { transaction in
                 TransactionFormView(mode: .edit(transaction), repository: repository)

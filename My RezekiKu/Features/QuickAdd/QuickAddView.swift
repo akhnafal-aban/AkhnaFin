@@ -10,6 +10,7 @@ import Persistence
 struct QuickAddView: View {
     private let parser: any TransactionParsing
     private let repository: TransactionRepository
+    private let locationService: (any LocationCapturing)?
 
     @State private var input = ""
     @State private var isParsing = false
@@ -17,9 +18,14 @@ struct QuickAddView: View {
     @State private var errorMessage: String?
     @FocusState private var inputFocused: Bool
 
-    init(parser: any TransactionParsing, repository: TransactionRepository) {
+    init(
+        parser: any TransactionParsing,
+        repository: TransactionRepository,
+        locationService: (any LocationCapturing)? = nil
+    ) {
         self.parser = parser
         self.repository = repository
+        self.locationService = locationService
     }
 
     var body: some View {
@@ -82,7 +88,8 @@ struct QuickAddView: View {
         .sheet(item: $pending) { pending in
             TransactionFormView(
                 mode: .confirmDraft(pending.draft, source: .quickAdd, receiptImage: nil),
-                repository: repository
+                repository: repository,
+                locationService: locationService
             ) {
                 input = ""
                 inputFocused = true
