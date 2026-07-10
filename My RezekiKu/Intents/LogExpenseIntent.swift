@@ -55,9 +55,11 @@ struct LogExpenseIntent: AppIntent {
                 snippetIntent: ConfirmExpenseSnippetIntent()
             )
         } catch {
-            // Batal / pindah ke jalur edit: bersihkan slot konfirmasi.
-            // (Slot handoff edit terpisah dan tetap utuh bila user memilih Edit.)
-            PendingDraftStore.clearStash()
+            // JANGAN clearStash di sini: menekan "Edit di App" MEMBATALKAN
+            // requestConfirmation, dan slot confirming masih dibaca oleh
+            // EditExpenseInAppIntent.promoteStashToEditRequest (race → draft hilang
+            // bila slot dihapus lebih dulu). Slot ditimpa otomatis oleh stash
+            // berikutnya; commit sukses tetap membersihkannya di bawah.
             intentLog.info("LogExpense konfirmasi dibatalkan")
             throw error
         }
