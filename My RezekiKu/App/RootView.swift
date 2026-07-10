@@ -16,10 +16,17 @@ struct RootView: View {
     var body: some View {
         TabView {
             Tab("Transaksi", systemImage: "list.bullet.rectangle") {
-                TransactionListView(repository: dependencies.repository)
+                TransactionListView(
+                    repository: dependencies.repository,
+                    locationService: dependencies.locationService
+                )
             }
             Tab("Catat Cepat", systemImage: "wand.and.stars") {
-                QuickAddView(parser: dependencies.parser, repository: dependencies.repository)
+                QuickAddView(
+                    parser: dependencies.parser,
+                    repository: dependencies.repository,
+                    locationService: dependencies.locationService
+                )
             }
             Tab("Pengaturan", systemImage: "gearshape") {
                 SettingsView(repository: dependencies.repository)
@@ -34,7 +41,8 @@ struct RootView: View {
         .sheet(item: $handoffDraft) { handoff in
             TransactionFormView(
                 mode: .confirmDraft(handoff.draft, source: handoff.source, receiptImage: handoff.receiptImage),
-                repository: dependencies.repository
+                repository: dependencies.repository,
+                locationService: dependencies.locationService
             )
         }
     }
