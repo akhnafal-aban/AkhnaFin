@@ -17,6 +17,7 @@ final class AppDependencies {
     let repository: TransactionRepository
     let parser: any TransactionParsing
     let scanner: any ReceiptScanning = VisionReceiptScanner()
+    let locationService: any LocationCapturing = CoreLocationService()
 
     init(container: ModelContainer) {
         let context = container.mainContext

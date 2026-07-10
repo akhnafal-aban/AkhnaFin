@@ -19,6 +19,9 @@ struct TransactionFormView: View {
 
     private let mode: Mode
     private let repository: TransactionRepository
+    /// Untuk auto-capture lokasi senyap saat menyimpan transaksi BARU (nil = nonaktif,
+    /// mis. Preview/edit). Gating akhir tetap lewat `LocationPreference`.
+    private let locationService: (any LocationCapturing)?
     private let onCommitted: () -> Void
 
     @State private var type: TransactionType
@@ -29,14 +32,17 @@ struct TransactionFormView: View {
     @State private var category: TransactionCategory?
     @State private var didResolveSuggestion = false
     @State private var saveFailed = false
+    @State private var isSaving = false
 
     init(
         mode: Mode,
         repository: TransactionRepository,
+        locationService: (any LocationCapturing)? = nil,
         onCommitted: @escaping () -> Void = {}
     ) {
         self.mode = mode
         self.repository = repository
+        self.locationService = locationService
         self.onCommitted = onCommitted
 
         let initial: (TransactionType, Decimal, Date, String, String, TransactionCategory?)
@@ -96,8 +102,12 @@ struct TransactionFormView: View {
                     Button("Batal") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Simpan") { save() }
-                        .disabled(amount <= 0)
+                    if isSaving {
+                        ProgressView()
+                    } else {
+                        Button("Simpan") { save() }
+                            .disabled(amount <= 0)
+                    }
                 }
             }
             .onAppear(perform: resolveSuggestedCategoryOnce)
@@ -141,47 +151,72 @@ struct TransactionFormView: View {
     // MARK: - Simpan
 
     private func save() {
-        do {
-            switch mode {
-            case .add:
-                let transaction = MoneyTransaction(
-                    amount: amount, type: type, date: date, note: note,
-                    merchant: merchant, source: .manual, category: category
-                )
-                try repository.create(transaction)
-
-            case .edit(let transaction):
-                transaction.type = type
-                transaction.amount = amount
-                transaction.date = date
-                transaction.merchant = merchant
-                transaction.note = note
-                transaction.category = category
-                try repository.save()
-
-            case .confirmDraft(let draft, let source, let receiptImage):
-                // Draft final dari state hasil editan user — tetap lewat pipeline commit().
-                var categoryName = ""
-                var subcategoryName = ""
-                if let category {
-                    if let parent = category.parent {
-                        categoryName = parent.name
-                        subcategoryName = category.name
-                    } else {
-                        categoryName = category.name
-                    }
-                }
-                let finalDraft = TransactionDraft(
-                    amount: amount, type: type, date: date, note: note,
-                    merchant: merchant, categoryName: categoryName,
-                    subcategoryName: subcategoryName, rawInput: draft.rawInput
-                )
-                try repository.commit(finalDraft, source: source, receiptImage: receiptImage)
+        guard !isSaving else { return }
+        isSaving = true
+        Task {
+            let place = await capturePlaceIfNeeded()
+            do {
+                try persist(place: place)
+                onCommitted()
+                dismiss()
+            } catch {
+                saveFailed = true
+                isSaving = false
             }
-            onCommitted()
-            dismiss()
-        } catch {
-            saveFailed = true
+        }
+    }
+
+    /// Auto-capture lokasi hanya untuk transaksi BARU (add/confirmDraft), bila
+    /// service terpasang & toggle "Rekam Lokasi" aktif. Edit tak menyentuh lokasi.
+    private func capturePlaceIfNeeded() async -> CapturedPlace? {
+        guard let locationService, LocationPreference.isEnabled else { return nil }
+        switch mode {
+        case .add, .confirmDraft: return await locationService.captureCurrent()
+        case .edit: return nil
+        }
+    }
+
+    private func persist(place: CapturedPlace?) throws {
+        switch mode {
+        case .add:
+            let transaction = MoneyTransaction(
+                amount: amount, type: type, date: date, note: note,
+                merchant: merchant, source: .manual, category: category
+            )
+            if let place {
+                transaction.latitude = place.latitude
+                transaction.longitude = place.longitude
+                transaction.placeName = place.placeName
+            }
+            try repository.create(transaction)
+
+        case .edit(let transaction):
+            transaction.type = type
+            transaction.amount = amount
+            transaction.date = date
+            transaction.merchant = merchant
+            transaction.note = note
+            transaction.category = category
+            try repository.save()
+
+        case .confirmDraft(let draft, let source, let receiptImage):
+            // Draft final dari state hasil editan user — tetap lewat pipeline commit().
+            var categoryName = ""
+            var subcategoryName = ""
+            if let category {
+                if let parent = category.parent {
+                    categoryName = parent.name
+                    subcategoryName = category.name
+                } else {
+                    categoryName = category.name
+                }
+            }
+            let finalDraft = TransactionDraft(
+                amount: amount, type: type, date: date, note: note,
+                merchant: merchant, categoryName: categoryName,
+                subcategoryName: subcategoryName, rawInput: draft.rawInput
+            )
+            try repository.commit(finalDraft, source: source, place: place, receiptImage: receiptImage)
         }
     }
 }
