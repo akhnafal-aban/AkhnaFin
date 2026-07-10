@@ -65,12 +65,3 @@ struct SettingsView: View {
     }
 }
 
-/// Stub sementara — diisi penuh di slice S4.
-struct CategoryManagementView: View {
-    let repository: TransactionRepository
-
-    var body: some View {
-        ContentUnavailableView("Kelola Kategori", systemImage: "tag", description: Text("Segera hadir."))
-            .navigationTitle("Kategori")
-    }
-}
