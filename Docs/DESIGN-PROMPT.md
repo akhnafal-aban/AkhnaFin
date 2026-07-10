@@ -1,4 +1,4 @@
-# My RezekiKu — Design System Base Prompt (untuk Claude Design)
+# AkhnaFin — Design System Base Prompt (untuk Claude Design)
 
 > Instruksi: Berikan penyesuaian untuk design prompt berikut untuk mengikuti style design referensi. Selain dari UI, tekankan juga prompt di bagian UX dengan menu mengikuti gambar yang terdapat referensi Menu
 > context, tambahkan permintaan spesifik di bagian **[REQUEST]** paling bawah.
@@ -6,7 +6,7 @@
 
 ---
 
-You are designing for **My RezekiKu**, a personal finance capture app for iOS, built natively in SwiftUI. Follow this design system strictly and consistently across every screen you produce.
+You are designing for **AkhnaFin**, a personal finance capture app for iOS, built natively in SwiftUI. Follow this design system strictly and consistently across every screen you produce.
 
 ## Product identity
 - Core promise: **frictionless expense capture** — logging a transaction takes one sentence or one screenshot. The app exists because manual expense tracking feels like a chore.
