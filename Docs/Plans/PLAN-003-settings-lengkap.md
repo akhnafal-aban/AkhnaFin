@@ -1,9 +1,19 @@
 # PLAN-003 — Settings Lengkap
 
-- **Status:** Aktif
+- **Status:** Selesai (implementasi + unit + sim) — checklist device menunggu user
 - **Dibuat:** 2026-07-10
 - **Induk:** PLAN-000-master-roadmap (item backlog "SettingsFeature", dibuka atas permintaan user pasca Fase B)
-- **Commit range:** mulai setelah `aec255f`
+- **Commit range:** `b17c54d`(S1) `b5b292a`(S2) `32ef460`(S3) + S4
+
+## Hasil
+- S1 ✅ status iCloud (AppContainer.activeStorageMode) + SettingsView menggantikan placeholder.
+- S2 ✅ CoreLocationService + auto-capture senyap di commit dalam-app; toggle Rekam Lokasi; Info.plist; verifikasi sim (prompt izin + capture).
+- S3 ✅ Category CRUD di repository + guard bawaan/nama kosong; 2 test.
+- S4 ✅ CategoryManagementView (list per jenis, induk+sub, swipe hapus/tambah-sub) + CategoryEditView (ikon grid, warna swatch) + Color(hex:). Build hijau; nav visual kategori belum dicek (Mac terkunci saat sesi) → cek user.
+- 36 unit test hijau.
+
+## Sisa (device/user)
+Izin lokasi tampil saat commit pertama & lokasi tersimpan (cek detail); tambah/edit/hapus kategori muncul di picker form; hapus bawaan ditolak.
 
 Tujuan: ganti placeholder Pengaturan jadi Settings fungsional — (1) kelola kategori CRUD+subkategori, (2) toggle "Rekam lokasi" + implementasi `LocationService` (CoreLocation, auto-capture senyap di commit dalam-app), (3) status sync iCloud. Pertahankan arsitektur (logic di package, UI di app), pipeline, SDK-first, commit per slice + test hijau.
 
