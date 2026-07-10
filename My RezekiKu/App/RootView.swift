@@ -47,6 +47,9 @@ struct RootView: View {
                 source: pending.source
             )
         }
+        // App di depan → tak ada konfirmasi Siri berjalan; buang sisa slot
+        // confirming yang tak jadi di-commit (intent batal tak lagi menghapusnya).
+        PendingDraftStore.clearStash()
     }
 }
 

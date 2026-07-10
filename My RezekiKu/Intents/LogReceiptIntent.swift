@@ -58,7 +58,9 @@ struct LogReceiptIntent: AppIntent {
                 snippetIntent: ConfirmExpenseSnippetIntent()
             )
         } catch {
-            PendingDraftStore.clearStash()
+            // JANGAN clearStash di sini (race dgn "Edit di App"): lihat catatan
+            // di LogExpenseIntent. Slot ditimpa stash berikutnya; sukses commit
+            // tetap membersihkannya di bawah.
             intentLog.info("LogReceipt konfirmasi dibatalkan")
             throw error
         }
