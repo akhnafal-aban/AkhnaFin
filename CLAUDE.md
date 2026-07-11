@@ -90,6 +90,14 @@ Semua `@Model`: atribut optional **atau** punya default; relasi optional **dan**
 3. **Referensi yang diakui:** dokumentasi resmi Apple (developer.apple.com) sebagai sumber utama; hackingwithswift.com sebagai referensi best practice. Sumber lain boleh sebagai pelengkap, bukan dasar keputusan.
 4. **Bertahap dan rapi.** Kerjakan dalam slice kecil yang selalu bisa di-build + di-test; satu commit git per slice dengan pesan menjelaskan alasan. User ingin memahami setiap langkah — jelaskan keputusan desain, jangan hanya menyodorkan hasil.
 
+## Context-window per sesi (WAJIB)
+
+Setiap sesi kerja, tulis snapshot konteks ke `Docs/context-window/NN-context-window.md`:
+- **NN** = nomor urut 2 digit, increment dari file bernomor tertinggi yang sudah ada (sesi lalu `01` → sesi ini `02`, dst). **Satu file per sesi — jangan menimpa file sesi lama.**
+- **Baca file sesi terakhir di awal sesi** untuk cepat paham keadaan proyek tanpa menggali ulang.
+- **Isi wajib:** ringkasan sesi, keputusan & gotcha baru, commit range, status verifikasi tertunda (device/user), langkah selanjutnya.
+- Tulis/perbarui di akhir sesi atau saat user memintanya. Tujuan: handoff mulus antar sesi (context window baru langsung nyambung).
+
 ## Roadmap fase (konteks arah)
 
 Fase 0 ✅ fondasi + CRUD manual → **Fase 1** NL parser (Foundation Models, `@Generable`, tanpa heuristic fallback — graceful state bila model unavailable) → Fase 2 App Intents/Siri → Fase 3 Voice → Fase 4 struk (Vision OCR → parser; multimodal saat iOS 27) → Fase 5 batch → Fase 6 dashboard (fixed, Swift Charts). Lokasi ditangkap otomatis-senyap saat commit (switch off di Settings). Kategori seed: Main Food; Lifestyle→(Jajan, Hiburan, Olahraga); Tagihan; Transport; Kesehatan; Gaji; Bonus.
