@@ -1,6 +1,7 @@
 # PLAN-002 — Fase B: Receipt Screenshot via Shortcut
 
-- **Status:** Draft (Aktif setelah gerbang A6 PLAN-001 lulus)
+- **Status:** Selesai (implementasi + unit + sim, 2026-07-09) — gerbang device (B5) menunggu checklist user
+- **Catatan pivot:** parser resi = heuristik deterministik `ReceiptHeuristics`, BUKAN Foundation Models — FM menolak semua prompt berisi teks Indonesia (`unsupportedLanguageOrLocale`, empiris; amplop English pun gagal). Bekerja tanpa Apple Intelligence.
 - **Dibuat:** 2026-07-04
 - **Induk:** PLAN-000-master-roadmap
 
@@ -16,9 +17,9 @@ Tujuan: user selesai bayar → screenshot resi → Shortcut → analisis → **k
 
 **B2. Parser resi.** `FoundationModelsParser.parseReceipt(text:) -> TransactionDraft` (atau `@Generable` khusus resi: total, merchant, tanggal, saran kategori) — prompt terpisah; korpus eval ≥5 teks resi fixture.
 
-**B3. `LogReceiptIntent` di `Intents/`.** `@Parameter` gambar (IntentFile image) → scanner → parseReceipt → **konfirmasi snippet A3 sama** → `repository.commit(draft, source: .receipt)` + set `receiptImageData` (`@Attribute(.externalStorage)` sudah ada). Tambah ke `RezekiShortcuts` ("Log receipt in …").
+**B3. `LogReceiptIntent` di `Intents/`.** `@Parameter` gambar (IntentFile image) → scanner → parseReceipt → **konfirmasi snippet A3 sama** → `repository.commit(draft, source: .receipt)` + set `receiptImageData` (`@Attribute(.externalStorage)` sudah ada). Tambah ke `AkhnaFinShortcuts` ("Log receipt in …").
 
-**B4. Resep Shortcut.** `Docs/SHORTCUT-RESI.md`: Shortcuts → "Take Screenshot" → "Log Receipt (My RezekiKu)"; opsional otomatisasi; langkah uji.
+**B4. Resep Shortcut.** `Docs/SHORTCUT-RESI.md`: Shortcuts → "Take Screenshot" → "Log Receipt (AkhnaFin)"; opsional otomatisasi; langkah uji.
 
 **B5. Gerbang verifikasi.**
 - Unit: scanner fixture + parser resi eval + regresi penuh.
