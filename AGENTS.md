@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## Proyek
 
@@ -89,14 +89,6 @@ Semua `@Model`: atribut optional **atau** punya default; relasi optional **dan**
 2. **Jangan percaya pengetahuan lama.** iOS 27 & Xcode 27 dirilis setelah knowledge cutoff — untuk API/perilaku framework yang tidak 100% pasti, **cek dulu** dokumentasi resmi via web search sebelum menulis kode.
 3. **Referensi yang diakui:** dokumentasi resmi Apple (developer.apple.com) sebagai sumber utama; hackingwithswift.com sebagai referensi best practice. Sumber lain boleh sebagai pelengkap, bukan dasar keputusan.
 4. **Bertahap dan rapi.** Kerjakan dalam slice kecil yang selalu bisa di-build + di-test; satu commit git per slice dengan pesan menjelaskan alasan. User ingin memahami setiap langkah — jelaskan keputusan desain, jangan hanya menyodorkan hasil.
-
-## Context-window per sesi (WAJIB)
-
-Setiap sesi kerja, tulis snapshot konteks ke `Docs/context-window/NN-context-window.md`:
-- **NN** = nomor urut 2 digit, increment dari file bernomor tertinggi yang sudah ada (sesi lalu `01` → sesi ini `02`, dst). **Satu file per sesi — jangan menimpa file sesi lama.**
-- **Baca file sesi terakhir di awal sesi** untuk cepat paham keadaan proyek tanpa menggali ulang.
-- **Isi wajib:** ringkasan sesi, keputusan & gotcha baru, commit range, status verifikasi tertunda (device/user), langkah selanjutnya.
-- Tulis/perbarui di akhir sesi atau saat user memintanya. Tujuan: handoff mulus antar sesi (context window baru langsung nyambung).
 
 ## Roadmap fase (konteks arah)
 
