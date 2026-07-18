@@ -61,6 +61,36 @@ struct ReceiptParsingTests {
         #expect(draft.note == "Nasi Goreng, Es Teh")
     }
 
+    /// E-receipt app pembayaran: layout 2 kolom → OCR (RecognizeDocuments)
+    /// memisah label & nominal ke baris berbeda. Transcript di bawah = hasil OCR
+    /// nyata yang terobservasi (lihat commit fix). Label "Total" klasik sering
+    /// absen — dipakai "Nominal"/"Jumlah"/"Pembayaran" atau headline "Rp".
+    private static let eReceipts: [(name: String, ocr: String, total: Decimal)] = [
+        ("Livin",     "Total Transaksi\nRp 225.000",                                     225000),
+        ("Transfer",  "Nominal\nRp 3.000",                                                 3000),
+        ("SeaBank",   "Rp 25.000\nNominal Transaksi\nJumlah Total\nRp 25.000\nRp 25.000", 25000),
+        ("ShopeePay", "Rincian Pembayaran\n-Rp87.800\nBerhasil\nBayar Ke",                87800),
+        ("Shopee",    "Rp 30.500\nJumlah Transfer\nRp 30.500",                            30500),
+    ]
+
+    @Test("E-receipt 2 kolom (label & nominal beda baris): total benar")
+    func eReceiptTwoColumn() async throws {
+        for c in Self.eReceipts {
+            let draft = try await parser.parseReceipt(text: c.ocr)
+            #expect(draft.amount == c.total, "total \(c.name)")
+            #expect(draft.type == .expense)
+        }
+    }
+
+    @Test("Baris promo/saldo tidak salah jadi total (ShopeePay banner)")
+    func promoNotMistakenForTotal() async throws {
+        // Banner promo "Rp1.000.000" & "+ Rp100 Saldo" tak boleh menang atas 87.800.
+        let draft = try await parser.parseReceipt(
+            text: "Rincian Pembayaran\n-Rp87.800\nDapat Saldo Rp1.000.000\n+ Rp100 Saldo ShopeePay"
+        )
+        #expect(draft.amount == 87800)
+    }
+
     @Test("Desimal koma & prefix Rp ter-parse")
     func decimalAndRpPrefix() async throws {
         let comma = try await parser.parseReceipt(text: "WARUNG A\nTOTAL 30.000,50")
@@ -85,6 +115,155 @@ struct ReceiptParsingTests {
         let filler = String(repeating: "Item Panjang 1.000\n", count: 60)
         let draft = try await parser.parseReceipt(text: "TOKO X\n" + filler + "TOTAL 60.000")
         #expect(draft.rawInput.count == 500)
+    }
+
+    // MARK: - E-resi nyata (transkrip OCR dari screenshot user: SeaBank, ShopeePay,
+    // Livin' QRIS, Livin' transfer, app referral)
+
+    private struct EReceiptCase: Sendable {
+        let name: String
+        let ocr: String
+        let total: Decimal
+        let merchantContains: String
+    }
+
+    private static let fullEReceipts: [EReceiptCase] = [
+        .init(
+            name: "SeaBank QRIS",
+            ocr: """
+            20.23
+            Hasil Transfer
+            Pembayaran Diterima
+            Rp 25.000
+            Dari
+            Noor Akhnafal Aban
+            SeaBank: 901457678857
+            Ke
+            SATE MADURA GUSTY 48
+            JAKARTA PUSAT
+            Nama Acquirer
+            PERMATA
+            9360-0013-1600-6042-749
+            Nominal Transaksi
+            Rp 25.000
+            Biaya Transaksi
+            GRATIS
+            Jumlah Total
+            Rp 25.000
+            No. Transaksi
+            2026071143507228515972038
+            No. Referensi
+            01130003N0TQ
+            """,
+            total: 25000, merchantContains: "SATE MADURA"
+        ),
+        .init(
+            name: "ShopeePay",
+            ocr: """
+            18.09
+            Rincian Pembayaran
+            -Rp87.800
+            Berhasil
+            Waktu Selesai 11-07-2026 11:53
+            Aplikasi ShopeePay
+            Tukar Poin
+            Dapat Saldo 1.000.000/orang
+            100JT
+            Bayar QRIS & Aplikasi
+            Bayar Ke
+            PT Astro Technologies Ind
+            Rincian Promo
+            Promo Dipakai
+            Cashback Saldo
+            Berhasil Dapat
+            + Rp100 Saldo ShopeePay
+            Poin Didapatkan
+            Tukar Poin
+            + 8 Poin
+            Rincian Pesanan
+            """,
+            total: 87800, merchantContains: "Astro"
+        ),
+        .init(
+            name: "Livin QRIS",
+            ocr: """
+            09.42
+            livin'
+            by mandiri
+            QR Bayar
+            Pembayaran Berhasil!
+            25 Apr 2026 • 09:41:50 WIB • No. Ref. 2604251121564453249
+            Penerima
+            Be My Star
+            Kota Tangerang, ID
+            Detail Transaksi
+            Total Transaksi
+            Rp 225.000
+            Sumber Dana
+            JEANY AURELLIA PUTRI
+            Bank Mandiri - 5781
+            No. Referensi QRIS
+            604254406134
+            Pengakuisisi
+            DANA
+            Merchant PAN
+            9360091532727713746
+            Customer PAN
+            9360000812252257818
+            Terminal ID
+            272771374
+            """,
+            total: 225000, merchantContains: "Be My Star"
+        ),
+        .init(
+            name: "Livin transfer",
+            ocr: """
+            18.37
+            Transfer Berhasil!
+            16 Apr 2026 • 18:37:03 WIB
+            Lihat Resi
+            Penerima
+            ANGELLA CHRISTIE
+            Bank Mandiri - 1850004159379
+            Nominal
+            Rp 3.000
+            dari JEANY AURELLIA PUTRI
+            Bagikan Resi
+            """,
+            total: 3000, merchantContains: "ANGELLA"
+        ),
+        .init(
+            name: "Referral bonus",
+            ocr: """
+            20.51
+            Transaction Details
+            Referral Bonus
+            800IW8S1783735926533
+            Transaction Summary
+            Transaction ID
+            800IW8S1783735926533
+            Status
+            Success
+            Total
+            Rp150.000
+            Transaction Details
+            Category
+            Referral
+            """,
+            total: 150000, merchantContains: "Referral"
+        ),
+    ]
+
+    @Test("E-resi nyata: total & merchant terbaca benar")
+    func eReceiptCorpus() async throws {
+        for c in Self.fullEReceipts {
+            let draft = try await parser.parseReceipt(text: c.ocr)
+            #expect(draft.amount == c.total, "\(c.name): total \(draft.amount)")
+            #expect(
+                draft.merchant.localizedCaseInsensitiveContains(c.merchantContains),
+                "\(c.name): merchant \"\(draft.merchant)\""
+            )
+        }
     }
 
     @Test("Tanpa baris total / OCR kosong → parsingFailed ramah")
