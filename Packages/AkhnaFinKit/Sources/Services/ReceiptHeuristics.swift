@@ -34,30 +34,75 @@ enum ReceiptHeuristics {
 
     // MARK: - Total
 
-    /// Prioritas keyword: GRAND TOTAL > TOTAL (bukan subtotal) > JUMLAH > TAGIHAN.
-    /// Pada keyword sama, ambil kemunculan terakhir (total akhir lazim di bawah).
+    /// Prioritas keyword: GRAND TOTAL > TOTAL (bukan subtotal) > JUMLAH = NOMINAL >
+    /// PEMBAYARAN = TAGIHAN. Pada keyword sama, ambil kemunculan terakhir.
+    /// `nominal`/`pembayaran` mencakup e-receipt app pembayaran (Livin, SeaBank,
+    /// ShopeePay, Shopee) yang tak memakai kata "TOTAL" klasik.
     private static let totalKeywords: [(pattern: String, score: Int)] = [
         ("grand\\s*total", 4),
         ("(?<!sub[\\s-])total", 3),
         ("jumlah", 2),
+        ("nominal", 2),
+        ("pembayaran", 1),
         ("tagihan", 1),
     ]
+
+    /// Baris yang TIDAK boleh dianggap total: subtotal, biaya/admin, potongan,
+    /// promo/poin/cashback, kembalian/tunai. Mencegah salah ambil pada e-receipt
+    /// (mis. "Biaya Transaksi", "+ Rp100 Saldo", banner promo "Rp1.000.000").
+    private static let excludeFromTotalPattern =
+        "sub\\s*total|biaya|admin|sisa|saldo|poin|promo|cashback|reward|kembali|tunai"
+
+    /// Skor keyword tertinggi untuk sebuah baris (nil bila bukan baris total).
+    private static func keywordScore(_ lower: String) -> Int? {
+        for (pattern, score) in totalKeywords
+        where lower.range(of: pattern, options: .regularExpression) != nil {
+            return score
+        }
+        return nil
+    }
 
     private static func totalAmount(in lines: [String]) -> Decimal? {
         var best: (score: Int, index: Int, amount: Decimal)?
         for (index, line) in lines.enumerated() {
             let lower = line.lowercased()
-            guard lower.range(of: "sub\\s*total", options: .regularExpression) == nil else { continue }
-            for (pattern, score) in totalKeywords {
-                guard lower.range(of: pattern, options: .regularExpression) != nil,
-                      let amount = amount(in: line), amount > 0 else { continue }
-                if best == nil || score > best!.score || (score == best!.score && index > best!.index) {
-                    best = (score, index, amount)
-                }
-                break
+            guard lower.range(of: excludeFromTotalPattern, options: .regularExpression) == nil,
+                  let score = keywordScore(lower) else { continue }
+            // Nominal bisa sebaris dengan keyword (struk toko) ATAU di baris
+            // berikutnya (e-receipt 2 kolom: label kiri, angka kanan → OCR pisah baris).
+            guard let amount = amount(in: line) ?? lookaheadAmount(lines, after: index),
+                  amount > 0 else { continue }
+            if best == nil || score > best!.score || (score == best!.score && index > best!.index) {
+                best = (score, index, amount)
             }
         }
-        return best?.amount
+        if let best { return best.amount }
+        // Fallback e-receipt tanpa keyword total (mis. ShopeePay "-Rp87.800"):
+        // nominal ber-prefix "Rp" paling atas = headline transaksi.
+        return headlineAmount(in: lines)
+    }
+
+    /// Angka pada 1–2 baris non-kosong sesudah `index` (e-receipt kolom terpisah).
+    private static func lookaheadAmount(_ lines: [String], after index: Int) -> Decimal? {
+        for offset in 1...2 {
+            let next = index + offset
+            guard next < lines.count else { break }
+            if let amount = amount(in: lines[next]), amount > 0 { return amount }
+        }
+        return nil
+    }
+
+    /// Nominal ber-prefix "Rp" pertama dari atas, lewati baris promo/saldo/biaya.
+    /// Prefix "Rp" wajib agar tak salah ambil nomor rekening/PAN/ref/terminal.
+    private static func headlineAmount(in lines: [String]) -> Decimal? {
+        for line in lines {
+            let lower = line.lowercased()
+            guard lower.contains("rp"),
+                  lower.range(of: excludeFromTotalPattern, options: .regularExpression) == nil,
+                  let amount = amount(in: line), amount > 0 else { continue }
+            return amount
+        }
+        return nil
     }
 
     /// Angka nominal di akhir baris. Dua bentuk: bertitik ribuan "121.148" /
@@ -90,13 +135,40 @@ enum ReceiptHeuristics {
 
     // MARK: - Merchant & item
 
-    /// Baris pertama yang tampak seperti nama (mengandung huruf, bukan dominan angka).
+    /// Label penerima pada e-receipt (baris label berdiri sendiri, nilai di baris
+    /// berikutnya — layout 2 kolom dipisah OCR). "Dari"/"Sumber Dana" sengaja
+    /// TIDAK ada di sini (itu pengirim, bukan merchant).
+    private static let merchantLabels: Set<String> = [
+        "ke", "bayar ke", "penerima", "merchant", "tujuan", "kepada",
+    ]
+
+    /// Kata header/status yang bukan nama merchant (untuk fallback baris-atas).
+    private static let merchantNoisePattern =
+        "\\b(hasil|pembayaran|transfer|berhasil|sukses|success|rincian|transaction|details?|struk|receipt|resi|diterima|summary)\\b"
+
     private static func merchantName(in lines: [String]) -> String {
-        for line in lines.prefix(3) {
-            let letters = line.filter(\.isLetter).count
-            if letters >= 3, letters * 2 >= line.count { return line }
+        // 1) E-receipt: label eksplisit → nilai = baris berikutnya yang tampak nama.
+        for (index, line) in lines.enumerated() {
+            let key = line.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: " :"))
+            guard merchantLabels.contains(key) else { continue }
+            for candidate in lines.dropFirst(index + 1).prefix(2) where isNameLike(candidate) {
+                return candidate
+            }
+        }
+        // 2) Struk toko: baris teratas yang tampak nama (skip header/status app).
+        for line in lines.prefix(4) {
+            guard line.lowercased().range(of: merchantNoisePattern, options: .regularExpression) == nil,
+                  isNameLike(line) else { continue }
+            return line
         }
         return ""
+    }
+
+    /// Nama plausible: cukup banyak huruf, bukan nomor rekening/ref (deret ≥7 digit).
+    private static func isNameLike(_ line: String) -> Bool {
+        let letters = line.filter(\.isLetter).count
+        guard letters >= 3, letters * 2 >= line.count else { return false }
+        return line.range(of: "[0-9]{7,}", options: .regularExpression) == nil
     }
 
     /// Baris ringkasan pembayaran/pajak — bukan item belanjaan.
