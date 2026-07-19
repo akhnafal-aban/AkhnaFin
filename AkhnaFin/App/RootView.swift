@@ -15,16 +15,13 @@ struct RootView: View {
 
     var body: some View {
         TabView {
+            // Tab "Catat Cepat" dihapus (keputusan Fase C): semua jalur capture
+            // pindah ke menu "+" di Transaksi (HIG pull-down button).
             Tab("Transaksi", systemImage: "list.bullet.rectangle") {
                 TransactionListView(
                     repository: dependencies.repository,
-                    locationService: dependencies.locationService
-                )
-            }
-            Tab("Catat Cepat", systemImage: "wand.and.stars") {
-                QuickAddView(
                     parser: dependencies.parser,
-                    repository: dependencies.repository,
+                    scanner: dependencies.scanner,
                     locationService: dependencies.locationService
                 )
             }

@@ -1,12 +1,16 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 import AkhnaFinCore
 import ServiceInterfaces
+import Services
 import Persistence
 
 /// Daftar transaksi: section per tanggal, pencarian, swipe edit/hapus.
 ///
 /// Read reaktif lewat `@Query` (MVVM hybrid); mutasi lewat `TransactionRepository`.
+/// Toolbar "+" = HIG pull-down button: satu tombol dengan menu tiga jalur capture
+/// (Text Entry / Upload Resi / Manual) — menggantikan tab "Catat Cepat".
 struct TransactionListView: View {
     @Query(sort: \MoneyTransaction.date, order: .reverse) private var transactions: [MoneyTransaction]
     @State private var searchText = ""
@@ -14,11 +18,28 @@ struct TransactionListView: View {
     @State private var editingTransaction: MoneyTransaction?
     @State private var deleteFailed = false
 
+    // Jalur capture dari menu "+"
+    @State private var isTextEntryPresented = false
+    @State private var isReceiptPickerPresented = false
+    @State private var receiptItem: PhotosPickerItem?
+    @State private var isParsingReceipt = false
+    @State private var receiptDraft: ReceiptDraft?
+    @State private var receiptError: String?
+
     private let repository: TransactionRepository
+    private let parser: (any TransactionParsing)?
+    private let scanner: (any ReceiptScanning)?
     private let locationService: (any LocationCapturing)?
 
-    init(repository: TransactionRepository, locationService: (any LocationCapturing)? = nil) {
+    init(
+        repository: TransactionRepository,
+        parser: (any TransactionParsing)? = nil,
+        scanner: (any ReceiptScanning)? = nil,
+        locationService: (any LocationCapturing)? = nil
+    ) {
         self.repository = repository
+        self.parser = parser
+        self.scanner = scanner
         self.locationService = locationService
     }
 
@@ -69,14 +90,76 @@ struct TransactionListView: View {
             .toolbarTitleDisplayMode(.inlineLarge)
             .searchable(text: $searchText, prompt: "Cari merchant, catatan, kategori")
             .toolbar {
-                Button {
-                    isAdding = true
+                // HIG pull-down button: aksi kreasi terkait dikonsolidasi di satu
+                // tombol; item prioritas tinggi (jalur tersering) di urutan atas.
+                Menu {
+                    if parser != nil {
+                        Button {
+                            isTextEntryPresented = true
+                        } label: {
+                            Label("Text Entry", systemImage: "square.and.pencil")
+                        }
+                    }
+                    if scanner != nil, parser != nil {
+                        Button {
+                            isReceiptPickerPresented = true
+                        } label: {
+                            Label("Upload Resi", systemImage: "photo.on.rectangle")
+                        }
+                    }
+                    Button {
+                        isAdding = true
+                    } label: {
+                        Label("Manual", systemImage: "plus.circle")
+                    }
                 } label: {
-                    Label("Tambah", systemImage: "plus")
+                    if isParsingReceipt {
+                        ProgressView()
+                    } else {
+                        Label("Tambah", systemImage: "plus")
+                    }
                 }
+                .disabled(isParsingReceipt)
             }
             .sheet(isPresented: $isAdding) {
                 TransactionFormView(mode: .add, repository: repository, locationService: locationService)
+            }
+            .sheet(isPresented: $isTextEntryPresented) {
+                if let parser {
+                    QuickAddView(
+                        parser: parser,
+                        repository: repository,
+                        locationService: locationService
+                    )
+                }
+            }
+            .photosPicker(
+                isPresented: $isReceiptPickerPresented,
+                selection: $receiptItem,
+                matching: .images
+            )
+            .onChange(of: receiptItem) {
+                if let receiptItem {
+                    parseReceipt(from: receiptItem)
+                }
+            }
+            .sheet(item: $receiptDraft) { pending in
+                TransactionFormView(
+                    mode: .confirmDraft(pending.draft, source: .receipt, receiptImage: pending.imageData),
+                    repository: repository,
+                    locationService: locationService
+                )
+            }
+            .alert(
+                "Gagal membaca resi",
+                isPresented: Binding(
+                    get: { receiptError != nil },
+                    set: { if !$0 { receiptError = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(receiptError ?? "")
             }
             .sheet(item: $editingTransaction) { transaction in
                 TransactionFormView(mode: .edit(transaction), repository: repository)
@@ -97,12 +180,48 @@ struct TransactionListView: View {
             }
         }
     }
+
+    // MARK: - Jalur Upload Resi
+
+    /// Foto galeri → Data → pipeline OCR+heuristik yang sama dgn Shortcut resi →
+    /// draft konfirmasi. Gagal → alert pesan siap-tampil dari `QuickLogError`.
+    private func parseReceipt(from item: PhotosPickerItem) {
+        guard let parser, let scanner, !isParsingReceipt else { return }
+        isParsingReceipt = true
+        receiptItem = nil  // reset agar pilihan sama bisa dipilih ulang
+        let pipeline = QuickLogPipeline(parser: parser, scanner: scanner)
+        Task {
+            defer { isParsingReceipt = false }
+            do {
+                guard let imageData = try await item.loadTransferable(type: Data.self) else {
+                    receiptError = "Gambar tidak bisa dibaca. Coba pilih foto lain."
+                    return
+                }
+                let draft = try await pipeline.parseReceiptDraft(fromImage: imageData)
+                receiptDraft = ReceiptDraft(draft: draft, imageData: imageData)
+            } catch {
+                receiptError = (error as? LocalizedError)?.errorDescription
+                    ?? "Gagal membaca resi. Coba lagi."
+            }
+        }
+    }
+}
+
+/// Pembungkus Identifiable untuk sheet(item:) — draft resi + gambar aslinya.
+private struct ReceiptDraft: Identifiable {
+    let id = UUID()
+    let draft: TransactionDraft
+    let imageData: Data
 }
 
 #Preview {
     let container = try! ModelContainerFactory.make(mode: .inMemory)
     try! CategorySeeder.seedIfNeeded(context: container.mainContext)
     let repository = TransactionRepository(context: container.mainContext)
-    return TransactionListView(repository: repository)
-        .modelContainer(container)
+    return TransactionListView(
+        repository: repository,
+        parser: MockTransactionParser(),
+        scanner: MockReceiptScanner()
+    )
+    .modelContainer(container)
 }
