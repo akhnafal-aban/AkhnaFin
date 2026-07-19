@@ -3,9 +3,10 @@
 - **Tanggal:** 2026-07-19
 - **Ringkasan:** Review + refactor Intents (dedup, snippet ramping, 3 fix
   correctness) → Fase C: dashboard Swift Charts + restrukturisasi jalur capture
-  (tab Catat Cepat dihapus → menu "+" HIG pull-down + Upload Resi in-app baru).
-  52 unit test hijau; verifikasi visual simulator lulus.
-- **Commit range:** `904fc0d` (refactor intents) → `b49ee5f` (seed demo) + commit docs sesudahnya.
+  (tab Catat Cepat dihapus → menu "+" HIG pull-down + Upload Resi in-app baru)
+  → PLAN-005 hutang/piutang (ledger terpisah, cicilan, kartu Dashboard) + fix
+  crash Charts. 63 unit test hijau; verifikasi visual simulator lulus.
+- **Commit range:** `904fc0d` (refactor intents) → `9af85c1` (fix donut) + docs.
 
 ## Yang selesai sesi ini
 
@@ -18,6 +19,8 @@
 | Fase C Slice C | `DashboardView` tab pertama: segmen periode + panah (maju disabled ke masa depan), ringkasan, donut `SectorMark` (top-5+"Lainnya", warna colorHex, `chartForegroundStyleScale`), bar tren (`unit: .day`/`.month`), a11y label per mark |
 | Verifikasi sim | Empty state + dashboard terisi (screenshot). Seed demo DEBUG-only `AKHNAFIN_DEMO_SEED=1` |
 | Docs | PLAN-004 (fase C, status Selesai), graphify graph di `graphify-out/` (gitignored) |
+| PLAN-005 hutang | `DebtRecord`/`DebtPayment`/`DebtDirection` (Core, CloudKit-compliant, status lunas DIHITUNG), `DebtRepository` (Persistence), UI `Features/Debts/` (list/form/detail, cicilan + Lunasi), kartu Hutang di Dashboard setelah Ringkasan (juga saat periode kosong), 11 test baru |
+| Fix crash Charts | Donut `chartForegroundStyleScale(domain:range:)` fatal `ConcreteScale+Discrete.swift:96` → warna statis per SectorMark + `FlowLegend` manual (`9af85c1`) |
 
 ## Keputusan & gotchas baru (tambahan dari sesi 01)
 
@@ -27,7 +30,9 @@
 - Transfer dikecualikan dari totals dashboard; subkategori digulung ke induk; periode Tahun pakai seri bulanan (365 bar tak terbaca).
 - `loadTransferable(type: Data.self)` (bukan `Image`) untuk foto resi — JPEG/HEIC.
 - Menu "+" = HIG pull-down button (aksi kreasi terkonsolidasi, label verba, prioritas atas). Sheet wajib punya tombol tutup.
-- **Hutang/piutang = kandidat PLAN-005** (diminta user, diparkir sadar — butuh domain modeling counterparty/status/pelunasan; skema additive aman CloudKit).
+- **PLAN-005 SELESAI** (bukan lagi kandidat): ledger terpisah dari kas (keputusan user), cicilan + paylater, Lunasi = payment sebesar sisa (idempotent), migrasi additive terverifikasi atas store lama.
+- **JANGAN pakai `chartForegroundStyleScale(domain:range:)`** — fatal `Charts/ConcreteScale+Discrete.swift:96` (nil unwrap, data-dependent, sim iOS 26.x, ditemukan via bisect). Pakai warna statis per mark + legend manual.
+- **Visi user tercatat (belum dibangun):** asset management — depresiasi, asset value, kategori aset. Tunggu permintaan eksplisit.
 
 ## Status verifikasi tertunda (device / user)
 
