@@ -78,9 +78,9 @@ struct TransactionFormView: View {
                 }
 
                 Picker("Jenis", selection: $type) {
-                    Text("Pengeluaran").tag(TransactionType.expense)
-                    Text("Pemasukan").tag(TransactionType.income)
-                    Text("Transfer").tag(TransactionType.transfer)
+                    ForEach(TransactionType.allCases, id: \.self) { type in
+                        Text(type.displayName).tag(type)
+                    }
                 }
                 .pickerStyle(.segmented)
 
@@ -212,9 +212,10 @@ struct TransactionFormView: View {
                 }
             }
             let finalDraft = TransactionDraft(
-                amount: amount, type: type, date: date, note: note,
-                merchant: merchant, categoryName: categoryName,
-                subcategoryName: subcategoryName, rawInput: draft.rawInput
+                amount: amount, currencyCode: draft.currencyCode, type: type,
+                date: date, note: note, merchant: merchant,
+                categoryName: categoryName, subcategoryName: subcategoryName,
+                rawInput: draft.rawInput
             )
             try repository.commit(finalDraft, source: source, place: place, receiptImage: receiptImage)
         }
