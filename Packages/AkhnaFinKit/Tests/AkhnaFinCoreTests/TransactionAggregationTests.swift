@@ -138,4 +138,20 @@ struct TransactionAggregationTests {
         #expect(series[3].total == 20000)
         #expect(series.map(\.total).reduce(0, +) == 35000)
     }
+
+    @Test("Seri bulanan: 12 bucket zero-filled untuk periode tahun")
+    func monthlySeriesForYear() {
+        let year = StatsPeriod.year.interval(containing: date(2026, 7, 15), calendar: calendar)
+        let transactions = [
+            tx(100_000, date: date(2026, 1, 5)),
+            tx(50_000, date: date(2026, 1, 20)),   // bulan sama → dijumlah
+            tx(75_000, date: date(2026, 7, 15)),
+        ]
+        let series = TransactionAggregation.monthlyExpenseSeries(transactions, in: year, calendar: calendar)
+        #expect(series.count == 12)
+        #expect(series[0].month == date(2026, 1, 1, hour: 0))
+        #expect(series[0].total == 150_000)
+        #expect(series[1].total == 0)
+        #expect(series[6].total == 75_000)
+    }
 }

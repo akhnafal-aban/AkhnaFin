@@ -90,18 +90,44 @@ public enum TransactionAggregation {
         in interval: DateInterval,
         calendar: Calendar = .current
     ) -> [(day: Date, total: Decimal)] {
-        var totalsByDay: [Date: Decimal] = [:]
-        for transaction in transactions
-        where transaction.type == .expense && interval.contains(transaction.date) {
-            totalsByDay[calendar.startOfDay(for: transaction.date), default: 0] += transaction.amount
+        bucketedExpenseSeries(transactions, in: interval, unit: .day, calendar: calendar)
+            .map { (day: $0.bucket, total: $0.total) }
+    }
+
+    /// Pengeluaran per bulan sepanjang `interval` — dipakai periode Tahun
+    /// (365 bar harian tidak terbaca; 12 bar bulanan iya).
+    public static func monthlyExpenseSeries(
+        _ transactions: [MoneyTransaction],
+        in interval: DateInterval,
+        calendar: Calendar = .current
+    ) -> [(month: Date, total: Decimal)] {
+        bucketedExpenseSeries(transactions, in: interval, unit: .month, calendar: calendar)
+            .map { (month: $0.bucket, total: $0.total) }
+    }
+
+    /// Mesin bersama: kelompokkan expense ke awal bucket kalender, zero-filled.
+    private static func bucketedExpenseSeries(
+        _ transactions: [MoneyTransaction],
+        in interval: DateInterval,
+        unit: Calendar.Component,
+        calendar: Calendar
+    ) -> [(bucket: Date, total: Decimal)] {
+        func bucketStart(_ date: Date) -> Date {
+            calendar.dateInterval(of: unit, for: date)?.start ?? calendar.startOfDay(for: date)
         }
 
-        var series: [(day: Date, total: Decimal)] = []
-        var day = calendar.startOfDay(for: interval.start)
-        while day < interval.end {
-            series.append((day: day, total: totalsByDay[day] ?? 0))
-            guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
-            day = next
+        var totalsByBucket: [Date: Decimal] = [:]
+        for transaction in transactions
+        where transaction.type == .expense && interval.contains(transaction.date) {
+            totalsByBucket[bucketStart(transaction.date), default: 0] += transaction.amount
+        }
+
+        var series: [(bucket: Date, total: Decimal)] = []
+        var bucket = bucketStart(interval.start)
+        while bucket < interval.end {
+            series.append((bucket: bucket, total: totalsByBucket[bucket] ?? 0))
+            guard let next = calendar.date(byAdding: unit, value: 1, to: bucket) else { break }
+            bucket = next
         }
         return series
     }
