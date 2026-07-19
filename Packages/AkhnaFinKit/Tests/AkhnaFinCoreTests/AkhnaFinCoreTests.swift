@@ -24,6 +24,13 @@ struct AkhnaFinCoreTests {
         #expect(c.parent == nil)
     }
 
+    @Test("TransactionType displayName Indonesia")
+    func typeDisplayName() {
+        #expect(TransactionType.expense.displayName == "Pengeluaran")
+        #expect(TransactionType.income.displayName == "Pemasukan")
+        #expect(TransactionType.transfer.displayName == "Transfer")
+    }
+
     @Test("Format Rupiah locale id_ID")
     func currencyFormatting() {
         let s = CurrencyFormatter.string(from: 20000)

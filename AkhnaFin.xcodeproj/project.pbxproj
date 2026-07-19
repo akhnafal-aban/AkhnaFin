@@ -14,7 +14,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A6121A082FF56CB500815F96 /* AkhnaFin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "AkhnaFin.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A6121A082FF56CB500815F96 /* AkhnaFin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AkhnaFin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -33,7 +33,7 @@
 			exceptions = (
 				A6121A152FF56CB600815F96 /* Exceptions for "AkhnaFin" folder in "AkhnaFin" target */,
 			);
-			path = "AkhnaFin";
+			path = AkhnaFin;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -87,14 +87,14 @@
 			fileSystemSynchronizedGroups = (
 				A6121A0A2FF56CB500815F96 /* AkhnaFin */,
 			);
-			name = "AkhnaFin";
+			name = AkhnaFin;
 			packageProductDependencies = (
 				A6121A272FF57AA800815F96 /* AkhnaFinCore */,
 				A6121A2A2FF57AA800815F96 /* Persistence */,
 				A6121A2E2FF57AA800815F96 /* ServiceInterfaces */,
 				A6121A302FF57AA800815F96 /* Services */,
 			);
-			productName = "AkhnaFin";
+			productName = AkhnaFin;
 			productReference = A6121A082FF56CB500815F96 /* AkhnaFin.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -161,13 +161,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "AkhnaFin/AkhnaFin.entitlements";
+				CODE_SIGN_ENTITLEMENTS = AkhnaFin/AkhnaFin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 3L6N85S53W;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "AkhnaFin/Info.plist";
+				INFOPLIST_FILE = AkhnaFin/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -178,7 +178,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.aban.AkhnaFin";
+				PRODUCT_BUNDLE_IDENTIFIER = com.aban.AkhnaFin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -195,13 +195,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "AkhnaFin/AkhnaFin.entitlements";
+				CODE_SIGN_ENTITLEMENTS = AkhnaFin/AkhnaFin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 3L6N85S53W;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "AkhnaFin/Info.plist";
+				INFOPLIST_FILE = AkhnaFin/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -212,7 +212,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.aban.AkhnaFin";
+				PRODUCT_BUNDLE_IDENTIFIER = com.aban.AkhnaFin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
