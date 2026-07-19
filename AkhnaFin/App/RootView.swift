@@ -17,6 +17,9 @@ struct RootView: View {
         TabView {
             // Tab "Catat Cepat" dihapus (keputusan Fase C): semua jalur capture
             // pindah ke menu "+" di Transaksi (HIG pull-down button).
+            Tab("Dashboard", systemImage: "chart.pie") {
+                DashboardView()
+            }
             Tab("Transaksi", systemImage: "list.bullet.rectangle") {
                 TransactionListView(
                     repository: dependencies.repository,
