@@ -42,6 +42,13 @@ struct DashboardView: View {
                         description: Text("Ganti periode, atau catat lewat tombol + di tab Transaksi.")
                     )
                     .listRowBackground(Color.clear)
+
+                    // Hutang independen dari periode — tetap tampil saat periode kosong.
+                    if let debtRepository {
+                        Section("Hutang") {
+                            debtCard(repository: debtRepository)
+                        }
+                    }
                 } else {
                     Section("Ringkasan") {
                         summaryRows
@@ -51,15 +58,16 @@ struct DashboardView: View {
                             categoryDonut
                         }
                     }
+                    // Hutang setelah Ringkasan (keputusan plan): outstanding =
+                    // kondisi saat ini, independen dari periode.
+                    if let debtRepository {
+                        Section("Hutang") {
+                            debtCard(repository: debtRepository)
+                        }
+                    }
+
                     Section(period == .year ? "Tren Bulanan" : "Tren Harian") {
                         trendBars
-                    }
-                }
-
-                // Hutang: independen dari periode (outstanding = kondisi saat ini).
-                if let debtRepository {
-                    Section("Hutang") {
-                        debtCard(repository: debtRepository)
                     }
                 }
             }
@@ -209,20 +217,28 @@ struct DashboardView: View {
     // MARK: - Donut kategori
 
     private var categoryDonut: some View {
-        Chart(slices, id: \.name) { slice in
-            SectorMark(
-                angle: .value("Total", doubleValue(slice.total)),
-                innerRadius: .ratio(0.618),
-                angularInset: 1.5
-            )
-            .cornerRadius(4)
-            .foregroundStyle(by: .value("Kategori", slice.name))
-            .accessibilityLabel(slice.name)
-            .accessibilityValue(CurrencyFormatter.string(from: slice.total))
+        VStack(spacing: 12) {
+            Chart(slices, id: \.name) { slice in
+                SectorMark(
+                    angle: .value("Total", doubleValue(slice.total)),
+                    innerRadius: .ratio(0.618),
+                    angularInset: 1.5
+                )
+                .cornerRadius(4)
+                // Warna STATIS per sektor + legend manual — BUKAN
+                // `.foregroundStyle(by:)` + `chartForegroundStyleScale(domain:range:)`:
+                // kombinasi itu crash di runtime
+                // (Charts/ConcreteScale+Discrete.swift:96 nil unwrap, terverifikasi
+                // empiris di sim iOS 26.x lewat bisect).
+                .foregroundStyle(sliceColor(slice))
+                .accessibilityLabel(slice.name)
+                .accessibilityValue(CurrencyFormatter.string(from: slice.total))
+            }
+            .frame(minHeight: 200)
+
+            // Legend manual (pengganti chartLegend yang butuh scale kategorikal).
+            FlowLegend(items: slices.map { ($0.name, sliceColor($0)) })
         }
-        .chartForegroundStyleScale(domain: slices.map(\.name), range: slices.map(sliceColor))
-        .chartLegend(position: .bottom, spacing: 12)
-        .frame(minHeight: 220)
         .padding(.vertical, 8)
     }
 
@@ -261,6 +277,29 @@ struct DashboardView: View {
     /// Decimal → Double untuk sumbu chart (Decimal bukan tipe plottable).
     private func doubleValue(_ decimal: Decimal) -> Double {
         NSDecimalNumber(decimal: decimal).doubleValue
+    }
+}
+
+/// Legend manual donut: bulatan warna + nama, wrap ke baris baru.
+private struct FlowLegend: View {
+    let items: [(name: String, color: Color)]
+
+    var body: some View {
+        LazyVGrid(
+            columns: [GridItem(.adaptive(minimum: 110), alignment: .leading)],
+            alignment: .leading,
+            spacing: 6
+        ) {
+            ForEach(items, id: \.name) { item in
+                HStack(spacing: 6) {
+                    Circle().fill(item.color).frame(width: 9, height: 9)
+                    Text(item.name)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+        }
     }
 }
 
