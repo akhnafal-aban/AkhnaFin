@@ -12,6 +12,7 @@ struct QuickAddView: View {
     private let repository: TransactionRepository
     private let locationService: (any LocationCapturing)?
 
+    @Environment(\.dismiss) private var dismiss
     @State private var input = ""
     @State private var isParsing = false
     @State private var pending: PendingDraft?
@@ -42,7 +43,14 @@ struct QuickAddView: View {
                     }
                 }
             }
-            .navigationTitle("Catat Cepat")
+            .navigationTitle("Text Entry")
+            // Kini dipresentasikan sebagai sheet dari menu "+" (bukan tab) —
+            // sheet butuh affordance tutup eksplisit (HIG).
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Tutup") { dismiss() }
+                }
+            }
         }
     }
 
