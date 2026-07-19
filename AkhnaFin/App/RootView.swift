@@ -48,15 +48,21 @@ struct RootView: View {
     }
 
     private func consumeEditRequest() {
-        if let pending = PendingDraftStore.consumeEditRequest() {
-            handoffDraft = HandoffDraft(
-                draft: pending.draft,
-                receiptImage: pending.receiptImage,
-                source: pending.source
-            )
+        guard let pending = PendingDraftStore.consumeEditRequest() else {
+            // Tidak ada edit-request → mungkin ADA konfirmasi Siri berjalan (mis.
+            // app di-foreground saat snippet menimpa). JANGAN sentuh slot confirming:
+            // menghapusnya akan mencuri draft yang sedang dikonfirmasi (review #5).
+            // Slot yang batal bersifat inert (hanya dibaca saat konfirmasi aktif)
+            // dan akan ditimpa stash berikutnya.
+            return
         }
-        // App di depan → tak ada konfirmasi Siri berjalan; buang sisa slot
-        // confirming yang tak jadi di-commit (intent batal tak lagi menghapusnya).
+        handoffDraft = HandoffDraft(
+            draft: pending.draft,
+            receiptImage: pending.receiptImage,
+            source: pending.source
+        )
+        // promoteStashToEditRequest sudah menyalin slot confirming ke edit-request,
+        // jadi aman membersihkannya sekarang.
         PendingDraftStore.clearStash()
     }
 }

@@ -13,7 +13,6 @@ import UniformTypeIdentifiers
 import AkhnaFinCore
 import ServiceInterfaces
 import Services
-import Persistence
 
 private let intentLog = Logger(subsystem: "com.aban.AkhnaFin", category: "Intent")
 
@@ -50,29 +49,9 @@ struct LogReceiptIntent: AppIntent {
             return .result(dialog: "\(error.errorDescription ?? "Gagal membaca resi.")")
         }
 
-        // Konfirmasi-dulu di luar app: snippet ringkasan + jalur Edit di App (A3).
-        PendingDraftStore.stash(draft, source: .receipt, receiptImage: imageData)
-        do {
-            try await requestConfirmation(
-                dialog: "Catat \(DraftSummary.text(of: draft))?",
-                snippetIntent: ConfirmExpenseSnippetIntent()
-            )
-        } catch {
-            // JANGAN clearStash di sini (race dgn "Edit di App"): lihat catatan
-            // di LogExpenseIntent. Slot ditimpa stash berikutnya; sukses commit
-            // tetap membersihkannya di bawah.
-            intentLog.info("LogReceipt konfirmasi dibatalkan")
-            throw error
-        }
-        PendingDraftStore.clearStash()
-
-        do {
-            _ = try dependencies.repository.commit(draft, source: .receipt, receiptImage: imageData)
-        } catch {
-            intentLog.error("LogReceipt simpan gagal: \(String(describing: error), privacy: .public)")
-            return .result(dialog: "Draft benar, tapi gagal menyimpan. Coba lagi dari dalam app.")
-        }
-        intentLog.info("LogReceipt tersimpan")
-        return .result(dialog: "Tercatat: \(DraftSummary.text(of: draft)).")
+        // Konfirmasi snippet → commit (dgn gambar resi) → bersihkan (alur bersama).
+        return .result(dialog: try await confirmStashAndCommit(
+            draft, source: .receipt, receiptImage: imageData
+        ))
     }
 }

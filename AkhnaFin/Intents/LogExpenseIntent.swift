@@ -11,7 +11,6 @@ import OSLog
 import AkhnaFinCore
 import ServiceInterfaces
 import Services
-import Persistence
 
 private let intentLog = Logger(subsystem: "com.aban.AkhnaFin", category: "Intent")
 
@@ -45,34 +44,8 @@ struct LogExpenseIntent: AppIntent {
             return .result(dialog: "\(error.errorDescription ?? "Gagal memproses.")")
         }
 
-        // Konfirmasi-dulu dengan snippet interaktif (A3): kartu ringkasan +
-        // tombol "Edit di App". Draft di-stash agar snippet bisa merender
-        // dan jalur edit bisa handoff ke app.
-        PendingDraftStore.stash(draft, source: .appIntent)
-        do {
-            try await requestConfirmation(
-                dialog: "Catat \(DraftSummary.text(of: draft))?",
-                snippetIntent: ConfirmExpenseSnippetIntent()
-            )
-        } catch {
-            // JANGAN clearStash di sini: menekan "Edit di App" MEMBATALKAN
-            // requestConfirmation, dan slot confirming masih dibaca oleh
-            // EditExpenseInAppIntent.promoteStashToEditRequest (race → draft hilang
-            // bila slot dihapus lebih dulu). Slot ditimpa otomatis oleh stash
-            // berikutnya; commit sukses tetap membersihkannya di bawah.
-            intentLog.info("LogExpense konfirmasi dibatalkan")
-            throw error
-        }
-        PendingDraftStore.clearStash()
-
-        do {
-            _ = try dependencies.repository.commit(draft, source: .appIntent)
-        } catch {
-            intentLog.error("LogExpense simpan gagal: \(String(describing: error), privacy: .public)")
-            return .result(dialog: "Draft benar, tapi gagal menyimpan. Coba lagi dari dalam app.")
-        }
-        intentLog.info("LogExpense tersimpan")
-        return .result(dialog: "Tercatat: \(DraftSummary.text(of: draft)).")
+        // Konfirmasi snippet → commit → bersihkan (alur bersama, lihat helper).
+        return .result(dialog: try await confirmStashAndCommit(draft, source: .appIntent))
     }
 }
 
