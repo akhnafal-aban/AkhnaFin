@@ -14,7 +14,10 @@ public enum ModelContainerFactory {
     }
 
     public static func make(mode: StorageMode) throws -> ModelContainer {
-        let schema = Schema([MoneyTransaction.self, TransactionCategory.self])
+        let schema = Schema([
+            MoneyTransaction.self, TransactionCategory.self,
+            DebtRecord.self, DebtPayment.self,
+        ])
         let configuration: ModelConfiguration
         switch mode {
         case .cloudKit:
