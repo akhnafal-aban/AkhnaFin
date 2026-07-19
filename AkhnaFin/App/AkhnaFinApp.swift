@@ -42,6 +42,20 @@ struct AkhnaFinApp: App {
             )
             context.insert(transaction)
         }
+        // Hutang dummy: paylater terlambat, piutang teman, satu lunas.
+        let paylater = DebtRecord(
+            counterparty: "SPayLater", direction: .iOwe, principal: 750_000,
+            dueDate: calendar.date(byAdding: .day, value: -3, to: .now)
+        )
+        let friend = DebtRecord(counterparty: "Budi", direction: .owedToMe, principal: 150_000)
+        let settled = DebtRecord(counterparty: "GoPayLater", direction: .iOwe, principal: 90_000)
+        for record in [paylater, friend, settled] { context.insert(record) }
+        let installment = DebtPayment(amount: 250_000, note: "Cicilan 1")
+        installment.debt = paylater
+        context.insert(installment)
+        let payoff = DebtPayment(amount: 90_000, note: "Pelunasan")
+        payoff.debt = settled
+        context.insert(payoff)
         try? context.save()
     }
     #endif

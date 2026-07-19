@@ -11,9 +11,18 @@ import Persistence
 /// memetakan hasilnya ke Swift Charts.
 struct DashboardView: View {
     @Query private var transactions: [MoneyTransaction]
+    @Query private var debts: [DebtRecord]
 
     @State private var period: StatsPeriod = .month
     @State private var interval: DateInterval = StatsPeriod.month.interval(containing: .now)
+
+    /// Untuk NavigationLink ke layar kelola hutang; nil = kartu Hutang disembunyikan
+    /// (Preview lama tetap jalan).
+    private let debtRepository: DebtRepository?
+
+    init(debtRepository: DebtRepository? = nil) {
+        self.debtRepository = debtRepository
+    }
 
     /// Maksimal irisan donut bernama; sisanya digulung ke "Lainnya" (HIG chart:
     /// 5–7 sektor agar terbaca).
@@ -44,6 +53,13 @@ struct DashboardView: View {
                     }
                     Section(period == .year ? "Tren Bulanan" : "Tren Harian") {
                         trendBars
+                    }
+                }
+
+                // Hutang: independen dari periode (outstanding = kondisi saat ini).
+                if let debtRepository {
+                    Section("Hutang") {
+                        debtCard(repository: debtRepository)
                     }
                 }
             }
@@ -161,6 +177,33 @@ struct DashboardView: View {
                 .font(.body.monospacedDigit().weight(.semibold))
         }
         .accessibilityElement(children: .combine)
+    }
+
+    // MARK: - Kartu Hutang
+
+    private func debtCard(repository: DebtRepository) -> some View {
+        let summary = DebtSummary.outstanding(debts)
+        return NavigationLink {
+            DebtListView(repository: repository)
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Label("Aku Berutang", systemImage: "arrow.up.right.circle.fill")
+                        .foregroundStyle(.red)
+                    Spacer()
+                    Text(CurrencyFormatter.string(from: summary.iOwe))
+                        .font(.body.monospacedDigit().weight(.semibold))
+                }
+                HStack {
+                    Label("Piutang", systemImage: "arrow.down.left.circle.fill")
+                        .foregroundStyle(.green)
+                    Spacer()
+                    Text(CurrencyFormatter.string(from: summary.owedToMe))
+                        .font(.body.monospacedDigit().weight(.semibold))
+                }
+            }
+            .accessibilityElement(children: .combine)
+        }
     }
 
     // MARK: - Donut kategori
