@@ -33,6 +33,7 @@
 - **PLAN-005 SELESAI** (bukan lagi kandidat): ledger terpisah dari kas (keputusan user), cicilan + paylater, Lunasi = payment sebesar sisa (idempotent), migrasi additive terverifikasi atas store lama.
 - **JANGAN pakai `chartForegroundStyleScale(domain:range:)`** — fatal `Charts/ConcreteScale+Discrete.swift:96` (nil unwrap, data-dependent, sim iOS 26.x, ditemukan via bisect). Pakai warna statis per mark + legend manual.
 - **Visi user tercatat (belum dibangun):** asset management — depresiasi, asset value, kategori aset. Tunggu permintaan eksplisit.
+- **App Intents snippet — JANGAN `requestConfirmation(snippetIntent:)` untuk snippet dgn tombol aksi-sendiri** (mis. "Edit di App"): `await requestConfirmation` menahan `perform()`, tombol nested yang buka app TAK menutup snippet → nggantung (device-verified). Pakai RESULT snippet (`ShowsSnippetView`, perform selesai seketika) dgn tiap tombol = AppIntent yang commit/handoff/batal sendiri (WWDC25 sesi 275). Fix di `ca7bf0a`.
 
 ## Status verifikasi tertunda (device / user)
 
