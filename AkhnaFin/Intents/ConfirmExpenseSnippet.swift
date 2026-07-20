@@ -2,28 +2,55 @@
 //  ConfirmExpenseSnippet.swift
 //  AkhnaFin
 //
-//  Snippet interaktif iOS 26 (A3 / BUG-1b): saat konfirmasi intent, user melihat
-//  kartu ringkasan draft + tombol "Edit di App" — bukan sekadar dialog biner.
+//  Snippet interaktif iOS 26 (result snippet, BUKAN requestConfirmation modal):
+//  kartu ringkasan draft + tiga tombol aksi (Simpan / Edit di App / Batal), tiap
+//  tombol AppIntent tersendiri yang dismiss/handoff dengan benar.
+//
+//  Kenapa bukan requestConfirmation: modal itu menahan `perform()` di `await`
+//  sehingga tombol "Edit di App" yang membuka app TIDAK pernah menutup snippet
+//  (bug device terverifikasi). Result snippet menyelesaikan perform seketika —
+//  membuka app lewat tombol menutup snippet (pola kanonik WWDC25 sesi 275).
 //
 
 import AppIntents
 import SwiftUI
+import OSLog
 import AkhnaFinCore
 import ServiceInterfaces
+import Persistence
 
-/// Snippet ringkasan draft yang tampil di UI konfirmasi Siri/Shortcuts.
-struct ConfirmExpenseSnippetIntent: SnippetIntent {
-    static let title: LocalizedStringResource = "Ringkasan Draft Transaksi"
+private let snippetLog = Logger(subsystem: "com.aban.AkhnaFin", category: "Intent")
+
+// MARK: - Tombol snippet (aksi)
+
+/// "Simpan": commit draft dari stash di background (tanpa buka app), lalu tutup
+/// snippet dengan dialog hasil.
+struct SaveDraftIntent: AppIntent {
+    static let title: LocalizedStringResource = "Simpan Transaksi"
     static let isDiscoverable = false
 
     @MainActor
-    func perform() async throws -> some IntentResult & ShowsSnippetView {
-        .result(view: DraftSnippetView(draft: PendingDraftStore.currentStash()))
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let payload = PendingDraftStore.currentStashPayload() else {
+            return .result(dialog: "Draft tidak ditemukan.")
+        }
+        do {
+            _ = try AppContainer.dependencies.repository.commit(
+                payload.draft, source: payload.source, receiptImage: payload.receiptImage
+            )
+        } catch {
+            snippetLog.error("SaveDraft gagal: \(String(describing: error), privacy: .public)")
+            return .result(dialog: "Draft benar, tapi gagal menyimpan. Coba dari dalam app.")
+        }
+        PendingDraftStore.clearStash()
+        snippetLog.info("SaveDraft tersimpan (\(payload.source.rawValue, privacy: .public))")
+        return .result(dialog: "Tercatat: \(DraftSummary.text(of: payload.draft)).")
     }
 }
 
-/// Dipicu tombol "Edit di App" di snippet: pindahkan draft ke slot handoff
-/// lalu buka app — RootView mendeteksi dan menyajikan TransactionFormView (mode confirmDraft).
+/// "Edit di App": pindahkan draft ke slot handoff lalu buka app. Karena snippet
+/// ini result snippet (bukan modal), membuka app menutup snippet — RootView
+/// mendeteksi handoff dan menyajikan TransactionFormView (mode confirmDraft).
 struct EditExpenseInAppIntent: AppIntent {
     static let title: LocalizedStringResource = "Edit Draft di App"
     static let isDiscoverable = false
@@ -36,15 +63,28 @@ struct EditExpenseInAppIntent: AppIntent {
     }
 }
 
-/// Kartu ringkas: nominal + jenis + SATU baris deskriptor + tanggal. Sengaja
-/// minimalis — detail penuh (merchant, catatan, kalimat asli) muncul di form
-/// setelah "Edit di App", bukan menumpuk di kartu konfirmasi (review #1).
-private struct DraftSnippetView: View {
-    let draft: TransactionDraft?
+/// "Batal": buang draft, tutup snippet.
+struct CancelDraftIntent: AppIntent {
+    static let title: LocalizedStringResource = "Batalkan"
+    static let isDiscoverable = false
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        PendingDraftStore.clearStash()
+        return .result(dialog: "Dibatalkan.")
+    }
+}
+
+// MARK: - Kartu snippet
+
+/// Kartu ringkas + tiga tombol. Sengaja minimalis (nominal + jenis + satu
+/// deskriptor + tanggal); detail penuh muncul di form setelah "Edit di App".
+struct DraftSnippetView: View {
+    private var draft: TransactionDraft? { PendingDraftStore.currentStash() }
 
     var body: some View {
         if let draft {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
                     Image(systemName: "wand.and.stars")
                         .foregroundStyle(.tint)
@@ -66,11 +106,24 @@ private struct DraftSnippetView: View {
                 }
                 .font(.subheadline)
 
-                Button(intent: EditExpenseInAppIntent()) {
-                    Label("Edit di App", systemImage: "square.and.pencil")
-                        .frame(maxWidth: .infinity)
+                HStack(spacing: 8) {
+                    Button(intent: SaveDraftIntent()) {
+                        Label("Simpan", systemImage: "checkmark")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Button(intent: EditExpenseInAppIntent()) {
+                        Label("Edit", systemImage: "square.and.pencil")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
+
+                Button(intent: CancelDraftIntent()) {
+                    Text("Batal").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderless)
             }
             .padding()
         } else {

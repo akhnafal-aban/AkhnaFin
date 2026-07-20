@@ -31,27 +31,20 @@ struct LogReceiptIntent: AppIntent {
     var receipt: IntentFile
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
         let dependencies = AppContainer.dependencies
         let imageData = receipt.data
         intentLog.info("LogReceipt mulai (\(imageData.count, privacy: .public) bytes)")
 
         // OCR + heuristik dgn pagar waktu — pipeline yang sama dgn jalur kalimat.
-        let draft: TransactionDraft
-        do {
-            draft = try await QuickLogPipeline(
-                parser: dependencies.parser,
-                scanner: dependencies.scanner
-            ).parseReceiptDraft(fromImage: imageData)
-            intentLog.info("LogReceipt parse sukses")
-        } catch let error as QuickLogError {
-            intentLog.error("LogReceipt parse gagal: \(String(describing: error), privacy: .public)")
-            return .result(dialog: "\(error.errorDescription ?? "Gagal membaca resi.")")
-        }
+        // Gagal → lempar QuickLogError (LocalizedError): Siri menampilkan pesannya.
+        let draft = try await QuickLogPipeline(
+            parser: dependencies.parser,
+            scanner: dependencies.scanner
+        ).parseReceiptDraft(fromImage: imageData)
+        intentLog.info("LogReceipt parse sukses")
 
-        // Konfirmasi snippet → commit (dgn gambar resi) → bersihkan (alur bersama).
-        return .result(dialog: try await confirmStashAndCommit(
-            draft, source: .receipt, receiptImage: imageData
-        ))
+        // Snippet interaktif sebagai HASIL: tombol Simpan (commit + gambar)/Edit/Batal.
+        return stashAndPresentDraft(draft, source: .receipt, receiptImage: imageData)
     }
 }
