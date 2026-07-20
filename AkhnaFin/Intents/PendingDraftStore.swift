@@ -32,6 +32,13 @@ enum PendingDraftStore {
         read(from: stashURL)?.draft
     }
 
+    /// Isi lengkap slot konfirmasi (draft + source + gambar) — dipakai tombol
+    /// "Simpan" di snippet untuk commit langsung dari background.
+    static func currentStashPayload() -> (draft: TransactionDraft, source: EntrySource, receiptImage: Data?)? {
+        guard let payload = read(from: stashURL) else { return nil }
+        return (payload.draft, payload.source, try? Data(contentsOf: stashImageURL))
+    }
+
     static func clearStash() {
         try? FileManager.default.removeItem(at: stashURL)
         try? FileManager.default.removeItem(at: stashImageURL)

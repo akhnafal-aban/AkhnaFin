@@ -29,23 +29,18 @@ struct LogExpenseIntent: AppIntent {
     var text: String
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
         // Container & wiring dibangun sekali per proses (BUG-2a) — bukan per invocation.
         let dependencies = AppContainer.dependencies
         intentLog.info("LogExpense mulai (\(text.count, privacy: .public) chars)")
 
         // Parse dengan pagar waktu — error granular, tidak pernah stuck (BUG-2b).
-        let draft: TransactionDraft
-        do {
-            draft = try await QuickLogPipeline(parser: dependencies.parser).parseDraft(from: text)
-            intentLog.info("LogExpense parse sukses")
-        } catch let error as QuickLogError {
-            intentLog.error("LogExpense parse gagal: \(String(describing: error), privacy: .public)")
-            return .result(dialog: "\(error.errorDescription ?? "Gagal memproses.")")
-        }
+        // Gagal → lempar QuickLogError (LocalizedError): Siri menampilkan pesannya.
+        let draft = try await QuickLogPipeline(parser: dependencies.parser).parseDraft(from: text)
+        intentLog.info("LogExpense parse sukses")
 
-        // Konfirmasi snippet → commit → bersihkan (alur bersama, lihat helper).
-        return .result(dialog: try await confirmStashAndCommit(draft, source: .appIntent))
+        // Snippet interaktif sebagai HASIL: tombol Simpan/Edit/Batal yang menutup.
+        return stashAndPresentDraft(draft, source: .appIntent)
     }
 }
 

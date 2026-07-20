@@ -2,50 +2,33 @@
 //  QuickLogConfirmation.swift
 //  AkhnaFin
 //
-//  Alur konfirmasi-lalu-simpan bersama LogExpenseIntent & LogReceiptIntent (A3).
-//  Dulu diduplikat ~90% di kedua intent (review #2); satu sumber di sini.
+//  Helper bersama LogExpenseIntent & LogReceiptIntent: stash draft lalu sajikan
+//  snippet interaktif sebagai HASIL intent (perform selesai seketika).
+//
+//  Dulu memakai `requestConfirmation` yang menahan perform di `await` → tombol
+//  "Edit di App" tak bisa menutup snippet. Result snippet memperbaikinya:
+//  commit/edit/batal ditangani tombol (SaveDraftIntent/EditExpenseInAppIntent/
+//  CancelDraftIntent), masing-masing menutup snippet dengan benar.
 //
 
 import AppIntents
-import OSLog
+import SwiftUI
 import AkhnaFinCore
 import ServiceInterfaces
-import Persistence
-
-private let confirmLog = Logger(subsystem: "com.aban.AkhnaFin", category: "Intent")
 
 extension AppIntent {
-    /// Stash draft → konfirmasi snippet interaktif → commit → bersihkan stash.
-    ///
-    /// Mengembalikan dialog siap-tampil (sukses ATAU gagal-simpan). MELEMPAR hanya saat
-    /// user membatalkan konfirmasi — termasuk menekan "Edit di App", yang membatalkan
-    /// `requestConfirmation` agar snippet menutup dan handoff ke app berjalan.
-    ///
-    /// Extension di `AppIntent` karena `requestConfirmation` adalah member intent,
-    /// bukan fungsi bebas.
+    /// Stash draft lalu kembalikan snippet ringkasan + tombol aksi. Dialog
+    /// terucap menyertai kartu.
     @MainActor
-    func confirmStashAndCommit(
+    func stashAndPresentDraft(
         _ draft: TransactionDraft,
         source: EntrySource,
         receiptImage: Data? = nil
-    ) async throws -> IntentDialog {
+    ) -> some IntentResult & ProvidesDialog & ShowsSnippetView {
         PendingDraftStore.stash(draft, source: source, receiptImage: receiptImage)
-        try await requestConfirmation(
+        return .result(
             dialog: "Catat \(DraftSummary.text(of: draft))?",
-            snippetIntent: ConfirmExpenseSnippetIntent()
+            view: DraftSnippetView()
         )
-        // Commit DULU, bersihkan stash HANYA setelah sukses — bila simpan gagal, stash
-        // tetap ada (dibersihkan saat app dibuka) alih-alih data ikut hilang (review #4).
-        do {
-            _ = try AppContainer.dependencies.repository.commit(
-                draft, source: source, receiptImage: receiptImage
-            )
-        } catch {
-            confirmLog.error("simpan gagal: \(String(describing: error), privacy: .public)")
-            return "Draft benar, tapi gagal menyimpan. Coba lagi dari dalam app."
-        }
-        PendingDraftStore.clearStash()
-        confirmLog.info("tersimpan (\(source.rawValue, privacy: .public))")
-        return "Tercatat: \(DraftSummary.text(of: draft))."
     }
 }
