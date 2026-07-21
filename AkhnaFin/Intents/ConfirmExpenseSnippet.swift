@@ -43,6 +43,14 @@ struct SaveDraftIntent: AppIntent {
             return .result(dialog: "Draft benar, tapi gagal menyimpan. Coba dari dalam app.")
         }
         PendingDraftStore.clearStash()
+        // Konfirmasi tanpa edit = penguat sinyal kategori (best-effort).
+        try? AppContainer.dependencies.signalRepository.record(
+            merchant: payload.draft.merchant,
+            bank: "",
+            noteKeywords: "\(payload.draft.rawInput) \(payload.draft.note)",
+            categoryName: payload.draft.categoryName,
+            edited: false
+        )
         snippetLog.info("SaveDraft tersimpan (\(payload.source.rawValue, privacy: .public))")
         return .result(dialog: "Tercatat: \(DraftSummary.text(of: payload.draft)).")
     }

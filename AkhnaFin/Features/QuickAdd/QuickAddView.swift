@@ -6,11 +6,13 @@ import Services
 import Persistence
 
 /// Catat cepat: ketik satu kalimat ("beli bakso 20k di kantin kantor") →
-/// parser on-device mengisi draft → user konfirmasi/edit → tersimpan.
+/// parser OpenRouter (Indonesia/English) mengisi draft → user konfirmasi/edit
+/// → tersimpan.
 struct QuickAddView: View {
     private let parser: any TransactionParsing
     private let repository: TransactionRepository
     private let locationService: (any LocationCapturing)?
+    private let signalRepository: SignalRepository?
 
     @Environment(\.dismiss) private var dismiss
     @State private var input = ""
@@ -22,11 +24,13 @@ struct QuickAddView: View {
     init(
         parser: any TransactionParsing,
         repository: TransactionRepository,
-        locationService: (any LocationCapturing)? = nil
+        locationService: (any LocationCapturing)? = nil,
+        signalRepository: SignalRepository? = nil
     ) {
         self.parser = parser
         self.repository = repository
         self.locationService = locationService
+        self.signalRepository = signalRepository
     }
 
     var body: some View {
@@ -58,7 +62,7 @@ struct QuickAddView: View {
         Form {
             Section {
                 TextField(
-                    "buy [food] [xxk] at the [places]",
+                    "beli [apa] [xxk] di [tempat]",
                     text: $input,
                     axis: .vertical
                 )
@@ -97,7 +101,8 @@ struct QuickAddView: View {
             TransactionFormView(
                 mode: .confirmDraft(pending.draft, source: .quickAdd, receiptImage: nil),
                 repository: repository,
-                locationService: locationService
+                locationService: locationService,
+                signalRepository: signalRepository
             ) {
                 input = ""
                 inputFocused = true

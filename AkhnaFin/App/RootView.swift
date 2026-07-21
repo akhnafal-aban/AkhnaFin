@@ -24,11 +24,12 @@ struct RootView: View {
                 TransactionListView(
                     repository: dependencies.repository,
                     parser: dependencies.parser,
-                    locationService: dependencies.locationService
+                    locationService: dependencies.locationService,
+                    signalRepository: dependencies.signalRepository
                 )
             }
             Tab("Pengaturan", systemImage: "gearshape") {
-                SettingsView(repository: dependencies.repository)
+                SettingsView(repository: dependencies.repository, keyStore: dependencies.keyStore)
             }
         }
         // Jalur "Edit di App" dari snippet intent (A3): konsumsi draft handoff
@@ -41,7 +42,8 @@ struct RootView: View {
             TransactionFormView(
                 mode: .confirmDraft(handoff.draft, source: handoff.source, receiptImage: handoff.receiptImage),
                 repository: dependencies.repository,
-                locationService: dependencies.locationService
+                locationService: dependencies.locationService,
+                signalRepository: dependencies.signalRepository
             )
         }
     }

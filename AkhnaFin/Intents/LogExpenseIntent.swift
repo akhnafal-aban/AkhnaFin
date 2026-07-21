@@ -17,14 +17,14 @@ private let intentLog = Logger(subsystem: "com.aban.AkhnaFin", category: "Intent
 struct LogExpenseIntent: AppIntent {
     static let title: LocalizedStringResource = "Catat Pengeluaran"
     static let description = IntentDescription(
-        "Catat transaksi dari satu kalimat Bahasa Inggris, mis. \"buy meatballs 20k at the canteen\"."
+        "Catat transaksi dari satu kalimat, mis. \"beli bakso 20k di kantin\"."
     )
     // Jalan di background (tanpa buka app); konfirmasi muncul sebagai prompt Siri/Shortcuts.
     static let openAppWhenRun = false
 
     @Parameter(
         title: "Transaksi",
-        requestValueDialog: "Apa yang mau dicatat? (Bahasa Inggris)"
+        requestValueDialog: "Apa yang mau dicatat?"
     )
     var text: String
 

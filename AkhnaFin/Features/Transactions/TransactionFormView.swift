@@ -22,6 +22,8 @@ struct TransactionFormView: View {
     /// Untuk auto-capture lokasi senyap saat menyimpan transaksi BARU (nil = nonaktif,
     /// mis. Preview/edit). Gating akhir tetap lewat `LocationPreference`.
     private let locationService: (any LocationCapturing)?
+    /// Belajar personalisasi kategori dari commit jalur AI (nil = tidak merekam).
+    private let signalRepository: SignalRepository?
     private let onCommitted: () -> Void
 
     @State private var type: TransactionType
@@ -38,11 +40,13 @@ struct TransactionFormView: View {
         mode: Mode,
         repository: TransactionRepository,
         locationService: (any LocationCapturing)? = nil,
+        signalRepository: SignalRepository? = nil,
         onCommitted: @escaping () -> Void = {}
     ) {
         self.mode = mode
         self.repository = repository
         self.locationService = locationService
+        self.signalRepository = signalRepository
         self.onCommitted = onCommitted
 
         let initial: (TransactionType, Decimal, Date, String, String, TransactionCategory?)
@@ -218,6 +222,19 @@ struct TransactionFormView: View {
                 rawInput: draft.rawInput
             )
             try repository.commit(finalDraft, source: source, place: place, receiptImage: receiptImage)
+
+            // Belajar: user mengubah kategori dari saran model = koreksi (bobot
+            // besar); menerima apa adanya = penguat. Gagal merekam tak boleh
+            // menggagalkan simpan (best-effort).
+            let edited = categoryName != draft.categoryName
+                || subcategoryName != draft.subcategoryName
+            try? signalRepository?.record(
+                merchant: merchant,
+                bank: "",
+                noteKeywords: "\(draft.rawInput) \(note)",
+                categoryName: categoryName,
+                edited: edited
+            )
         }
     }
 }

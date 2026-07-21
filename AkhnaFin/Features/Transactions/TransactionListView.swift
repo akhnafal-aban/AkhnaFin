@@ -29,15 +29,18 @@ struct TransactionListView: View {
     private let repository: TransactionRepository
     private let parser: (any TransactionParsing)?
     private let locationService: (any LocationCapturing)?
+    private let signalRepository: SignalRepository?
 
     init(
         repository: TransactionRepository,
         parser: (any TransactionParsing)? = nil,
-        locationService: (any LocationCapturing)? = nil
+        locationService: (any LocationCapturing)? = nil,
+        signalRepository: SignalRepository? = nil
     ) {
         self.repository = repository
         self.parser = parser
         self.locationService = locationService
+        self.signalRepository = signalRepository
     }
 
     private var filteredTransactions: [MoneyTransaction] {
@@ -124,7 +127,8 @@ struct TransactionListView: View {
                     QuickAddView(
                         parser: parser,
                         repository: repository,
-                        locationService: locationService
+                        locationService: locationService,
+                        signalRepository: signalRepository
                     )
                 }
             }
@@ -142,7 +146,8 @@ struct TransactionListView: View {
                 TransactionFormView(
                     mode: .confirmDraft(pending.draft, source: .receipt, receiptImage: pending.imageData),
                     repository: repository,
-                    locationService: locationService
+                    locationService: locationService,
+                    signalRepository: signalRepository
                 )
             }
             .alert(
