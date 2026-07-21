@@ -47,7 +47,7 @@ public struct MockTransactionParser: TransactionParsing {
         return drafts
     }
 
-    public func parseReceipt(text: String) async throws -> TransactionDraft {
-        try await parse(text)
+    public func parseReceipt(image: Data) async throws -> TransactionDraft {
+        try await parse("resi (\(image.count) bytes)")
     }
 }

@@ -24,7 +24,6 @@ struct RootView: View {
                 TransactionListView(
                     repository: dependencies.repository,
                     parser: dependencies.parser,
-                    scanner: dependencies.scanner,
                     locationService: dependencies.locationService
                 )
             }

@@ -36,12 +36,10 @@ struct LogReceiptIntent: AppIntent {
         let imageData = receipt.data
         intentLog.info("LogReceipt mulai (\(imageData.count, privacy: .public) bytes)")
 
-        // OCR + heuristik dgn pagar waktu — pipeline yang sama dgn jalur kalimat.
+        // Gambar langsung ke model multimodal (PLAN-006) dgn pagar waktu.
         // Gagal → lempar QuickLogError (LocalizedError): Siri menampilkan pesannya.
-        let draft = try await QuickLogPipeline(
-            parser: dependencies.parser,
-            scanner: dependencies.scanner
-        ).parseReceiptDraft(fromImage: imageData)
+        let draft = try await QuickLogPipeline(parser: dependencies.parser)
+            .parseReceiptDraft(fromImage: imageData)
         intentLog.info("LogReceipt parse sukses")
 
         // Snippet interaktif sebagai HASIL: tombol Simpan (commit + gambar)/Edit/Batal.

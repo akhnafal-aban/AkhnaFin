@@ -28,18 +28,15 @@ struct TransactionListView: View {
 
     private let repository: TransactionRepository
     private let parser: (any TransactionParsing)?
-    private let scanner: (any ReceiptScanning)?
     private let locationService: (any LocationCapturing)?
 
     init(
         repository: TransactionRepository,
         parser: (any TransactionParsing)? = nil,
-        scanner: (any ReceiptScanning)? = nil,
         locationService: (any LocationCapturing)? = nil
     ) {
         self.repository = repository
         self.parser = parser
-        self.scanner = scanner
         self.locationService = locationService
     }
 
@@ -99,8 +96,6 @@ struct TransactionListView: View {
                         } label: {
                             Label("Text Entry", systemImage: "square.and.pencil")
                         }
-                    }
-                    if scanner != nil, parser != nil {
                         Button {
                             isReceiptPickerPresented = true
                         } label: {
@@ -186,10 +181,10 @@ struct TransactionListView: View {
     /// Foto galeri → Data → pipeline OCR+heuristik yang sama dgn Shortcut resi →
     /// draft konfirmasi. Gagal → alert pesan siap-tampil dari `QuickLogError`.
     private func parseReceipt(from item: PhotosPickerItem) {
-        guard let parser, let scanner, !isParsingReceipt else { return }
+        guard let parser, !isParsingReceipt else { return }
         isParsingReceipt = true
         receiptItem = nil  // reset agar pilihan sama bisa dipilih ulang
-        let pipeline = QuickLogPipeline(parser: parser, scanner: scanner)
+        let pipeline = QuickLogPipeline(parser: parser)
         Task {
             defer { isParsingReceipt = false }
             do {
@@ -220,8 +215,7 @@ private struct ReceiptDraft: Identifiable {
     let repository = TransactionRepository(context: container.mainContext)
     return TransactionListView(
         repository: repository,
-        parser: MockTransactionParser(),
-        scanner: MockReceiptScanner()
+        parser: MockTransactionParser()
     )
     .modelContainer(container)
 }
