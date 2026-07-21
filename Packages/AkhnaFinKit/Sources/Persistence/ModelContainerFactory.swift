@@ -17,6 +17,7 @@ public enum ModelContainerFactory {
         let schema = Schema([
             MoneyTransaction.self, TransactionCategory.self,
             DebtRecord.self, DebtPayment.self,
+            CategorySignal.self,
         ])
         let configuration: ModelConfiguration
         switch mode {
