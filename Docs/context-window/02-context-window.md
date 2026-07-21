@@ -35,6 +35,15 @@
 - **Visi user tercatat (belum dibangun):** asset management — depresiasi, asset value, kategori aset. Tunggu permintaan eksplisit.
 - **App Intents snippet — JANGAN `requestConfirmation(snippetIntent:)` untuk snippet dgn tombol aksi-sendiri** (mis. "Edit di App"): `await requestConfirmation` menahan `perform()`, tombol nested yang buka app TAK menutup snippet → nggantung (device-verified). Pakai RESULT snippet (`ShowsSnippetView`, perform selesai seketika) dgn tiap tombol = AppIntent yang commit/handoff/batal sendiri (WWDC25 sesi 275). Fix di `ca7bf0a`.
 
+## PLAN-006 — Pivot AI ke OpenRouter (bagian akhir sesi)
+
+- **Jalur Apple-native DIHAPUS** (FoundationModelsParser, VisionReceiptScanner, ReceiptHeuristics; `parseReceipt(text:)` → `parseReceipt(image:)`; ReceiptScanning mati). AI = `OpenRouterParser` 2-stage: Nemotron omni (`nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`, teks Indonesia/English + foto resi) → `openai/gpt-oss-120b:free` (structured outputs strict + `provider.require_parameters`). Free tier = pilihan sadar user (privasi + rate limit tercatat di PLAN-006). Timeout pipeline 25s.
+- **API key**: Keychain via `OpenRouterKeyStore` (`APIKeyStoring`), SecureField di Pengaturan; tak pernah di log/UserDefaults/ditampilkan ulang.
+- **Personalisasi**: `CategorySignal` (@Model, edge berbobot merchant|keyword|bank → kategori) + `SignalRepository` (konfirmasi +1.0, edit +2.5, snippet ≤12 baris relevan ke prompt stage-2). Feedback loop: FormView confirmDraft + SaveDraftIntent merekam tiap commit jalur AI.
+- **Gotcha test baru**: handler statis URLProtocol TIDAK boleh dibagi antar suite (suite jalan paralel → race) — satu subclass URLProtocol per suite.
+- Bonus pivot: input Indonesia didukung; parser jalan di simulator; FM gotchas lama (unsupportedLanguageOrLocale, ModelManagerError 1026) kini historis.
+- Commit: `f837149` A (transport) → `c8ca853` B (parser+hapus) → `3097e1d` C (signals) → `a7f3032` D (wiring+Settings).
+
 ## Status verifikasi tertunda (device / user)
 
 - Menu "+" tap-through; Upload Resi end-to-end (galeri → OCR → simpan+gambar); Text Entry live parse (FM device-only); snippet ramping + auto-close "Edit di App" (inheren: `EditExpenseInAppIntent.openAppWhenRun` membatalkan `requestConfirmation`).
@@ -43,9 +52,10 @@
 
 ## Langkah selanjutnya
 
-1. User verifikasi device (daftar di atas) → perbaiki temuan.
-2. **PLAN-005 hutang/piutang** bila user lanjut.
-3. Rapikan seed demo (kategori income nempel ke expense — artefak seed, bukan bug agregasi).
+1. **User: paste API key OpenRouter di Pengaturan** (sim/device) → uji live Text Entry Indonesia, Upload Resi, snippet Siri, koreksi kategori 2× → lihat personalisasi bekerja.
+2. Verifikasi device tertunda lainnya (snippet Simpan/Edit/Batal, sync CloudKit entity baru: Debt*, CategorySignal).
+3. Backlog: Voice, batch, notifikasi jatuh tempo, asset management (visi), optimasi 1-call multimodal.
+4. Rapikan seed demo (kategori income nempel ke expense — artefak seed).
 
 ## Peta dokumen
 
