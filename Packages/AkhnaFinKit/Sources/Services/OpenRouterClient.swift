@@ -12,7 +12,7 @@ public enum OpenRouterModel {
     /// Stage 2 — transaction generator (structured outputs, free tier).
     /// `gpt-oss-120b:free` TIDAK ADA di OpenRouter — hanya paid; `gpt-oss-20b:free`
     /// = anggota keluarga gpt-oss gratis yang dukung structured outputs.
-    public static let generator = "openai/gpt-oss-20b:free"
+    public static let generator = "openai/gpt-oss-120b"
 }
 
 /// Satu bagian isi pesan chat (teks atau gambar).
