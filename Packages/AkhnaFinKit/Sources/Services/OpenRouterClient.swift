@@ -7,9 +7,12 @@ private let clientLog = Logger(subsystem: "com.aban.AkhnaFin", category: "OpenRo
 /// Slug model OpenRouter yang dipakai pipeline (keputusan PLAN-006, free tier).
 public enum OpenRouterModel {
     /// Stage 1 — perception/parser multimodal (teks + gambar resi).
+    /// Tak dukung structured outputs (dipanggil `structured: false`).
     public static let perception = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
-    /// Stage 2 — transaction generator (structured outputs).
-    public static let generator = "openai/gpt-oss-120b:free"
+    /// Stage 2 — transaction generator (structured outputs, free tier).
+    /// `gpt-oss-120b:free` TIDAK ADA di OpenRouter — hanya paid; `gpt-oss-20b:free`
+    /// = anggota keluarga gpt-oss gratis yang dukung structured outputs.
+    public static let generator = "openai/gpt-oss-20b:free"
 }
 
 /// Satu bagian isi pesan chat (teks atau gambar).
@@ -53,11 +56,18 @@ public struct OpenRouterClient: Sendable {
     ///
     /// `schemaJSON` = JSON Schema mentah (string literal statis di pemanggil —
     /// Sendable-safe untuk Swift 6 strict concurrency).
+    ///
+    /// `structured`: kirim `response_format json_schema strict` + `require_parameters`.
+    /// HARUS false untuk model yang tak dukung structured outputs (mis. Nemotron
+    /// omni :free) — bila true di model tsb, OpenRouter membalas "No endpoints
+    /// found that can handle the requested parameters" (terverifikasi lewat
+    /// models API `supported_parameters`).
     public func completeStructured(
         model: String,
         messages: [ORChatMessage],
         schemaName: String,
-        schemaJSON: String
+        schemaJSON: String,
+        structured: Bool = true
     ) async throws -> Data {
         guard let apiKey = keyStore.read(), !apiKey.isEmpty else {
             throw TransactionParsingError.modelUnavailable(
@@ -72,7 +82,10 @@ public struct OpenRouterClient: Sendable {
         // Atribusi opsional (docs quickstart) — bukan rahasia.
         request.setValue("https://github.com/akhnafal-aban/AkhnaFin", forHTTPHeaderField: "HTTP-Referer")
         request.setValue("AkhnaFin", forHTTPHeaderField: "X-Title")
-        request.httpBody = try Self.body(model: model, messages: messages, schemaName: schemaName, schemaJSON: schemaJSON)
+        request.httpBody = try Self.body(
+            model: model, messages: messages,
+            schemaName: schemaName, schemaJSON: schemaJSON, structured: structured
+        )
 
         let (data, response): (Data, URLResponse)
         do {
@@ -103,24 +116,24 @@ public struct OpenRouterClient: Sendable {
         model: String,
         messages: [ORChatMessage],
         schemaName: String,
-        schemaJSON: String
+        schemaJSON: String,
+        structured: Bool
     ) throws -> Data {
-        let schema = try JSONSerialization.jsonObject(with: Data(schemaJSON.utf8))
-        let payload: [String: Any] = [
+        var payload: [String: Any] = [
             "model": model,
             "messages": messages.map(serialize(_:)),
-            "response_format": [
-                "type": "json_schema",
-                "json_schema": [
-                    "name": schemaName,
-                    "strict": true,
-                    "schema": schema,
-                ],
-            ],
-            // Gagal eksplisit bila provider tak dukung structured outputs
-            // (docs structured-outputs) — jangan diam-diam dapat JSON bebas.
-            "provider": ["require_parameters": true],
         ]
+        if structured {
+            let schema = try JSONSerialization.jsonObject(with: Data(schemaJSON.utf8))
+            payload["response_format"] = [
+                "type": "json_schema",
+                "json_schema": ["name": schemaName, "strict": true, "schema": schema],
+            ]
+            // Hanya route ke provider yang dukung structured outputs
+            // (docs structured-outputs). Jangan set ini bila structured=false —
+            // provider yang tak dukung json_schema akan ditolak semua → error.
+            payload["provider"] = ["require_parameters": true]
+        }
         return try JSONSerialization.data(withJSONObject: payload)
     }
 
