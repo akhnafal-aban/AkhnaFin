@@ -82,6 +82,31 @@ struct OpenRouterClientTests {
         #expect((body["provider"] as! [String: Any])["require_parameters"] as? Bool == true)
     }
 
+    @Test("reasoning.effort default low terkirim; nil → tak dikirim sama sekali")
+    func reasoningEffortDefault() async throws {
+        nonisolated(unsafe) var captured: URLRequest?
+        MockURLProtocol.handler = { request in
+            captured = request
+            return (200, Self.success(content: #"{"x":"ok"}"#))
+        }
+        _ = try await makeClient().completeStructured(
+            model: "m", messages: [.user([.text("t")])], schemaName: "t", schemaJSON: schema
+        )
+        var body = try JSONSerialization.jsonObject(with: #require(captured?.httpBody)) as! [String: Any]
+        #expect((body["reasoning"] as? [String: String])?["effort"] == "low")
+
+        MockURLProtocol.handler = { request in
+            captured = request
+            return (200, Self.success(content: #"{"x":"ok"}"#))
+        }
+        _ = try await makeClient().completeStructured(
+            model: "m", messages: [.user([.text("t")])], schemaName: "t", schemaJSON: schema,
+            reasoningEffort: nil
+        )
+        body = try JSONSerialization.jsonObject(with: #require(captured?.httpBody)) as! [String: Any]
+        #expect(body["reasoning"] == nil)
+    }
+
     @Test("structured:false → tanpa response_format & tanpa provider (routing bebas)")
     func nonStructuredOmitsSchema() async throws {
         nonisolated(unsafe) var captured: URLRequest?
