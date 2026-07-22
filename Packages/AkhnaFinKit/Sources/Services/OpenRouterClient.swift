@@ -4,15 +4,17 @@ import ServiceInterfaces
 
 private let clientLog = Logger(subsystem: "com.aban.AkhnaFin", category: "OpenRouter")
 
-/// Slug model OpenRouter yang dipakai pipeline (keputusan PLAN-006, free tier).
+/// Slug model OpenRouter yang dipakai pipeline (keputusan PLAN-006).
 public enum OpenRouterModel {
-    /// Stage 1 — perception/parser multimodal (teks + gambar resi).
-    /// Tak dukung structured outputs (dipanggil `structured: false`).
-    public static let perception = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
-    /// Stage 2 — transaction generator (structured outputs, free tier).
-    /// `gpt-oss-120b:free` TIDAK ADA di OpenRouter — hanya paid; `gpt-oss-20b:free`
-    /// = anggota keluarga gpt-oss gratis yang dukung structured outputs.
-    public static let generator = "openai/gpt-oss-120b"
+    /// Model tunggal multimodal (teks + gambar resi), gratis: MoE 25.2B total,
+    /// HANYA ~3.8B aktif/token — paling ringan di antara kandidat gratis yang
+    /// diriset (dibanding Gemma 31B dense atau Nemotron omni 30B-A3B reasoning-
+    /// wajib). Dukung `response_format json_schema` native — tanpa prompt-hack
+    /// JSON. Dipilih setelah 2-stage awal (Nemotron→gpt-oss) diukur live 23.2s;
+    /// satu model = satu round-trip, plus kategori kini ikut ditebak dalam call
+    /// yang sama (dibantu daftar kategori + `CategorySignal`), menghapus
+    /// keperluan call kedua sepenuhnya.
+    public static let model = "google/gemma-4-26b-a4b-it:free"
 }
 
 /// Satu bagian isi pesan chat (teks atau gambar).

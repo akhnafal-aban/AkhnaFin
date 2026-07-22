@@ -47,20 +47,16 @@ final class ParserMockURLProtocol: URLProtocol {
     override func stopLoading() {}
 }
 
-@Suite("OpenRouterParser — 2-stage via client mock", .serialized)
+@Suite("OpenRouterParser — satu call via client mock", .serialized)
 struct OpenRouterParserTests {
-    /// Client dgn URLProtocol mock: bedakan stage dari field `model` body.
     private func makeParser(
-        stage1: String,
-        stage2: String,
+        content: String,
         personalization: (any PersonalizationProviding)? = nil,
         onRequest: (@Sendable ([String: Any]) -> Void)? = nil
     ) -> OpenRouterParser {
         ParserMockURLProtocol.handler = { request in
             let body = try! JSONSerialization.jsonObject(with: request.httpBody ?? Data()) as! [String: Any]
             onRequest?(body)
-            let model = body["model"] as! String
-            let content = model == OpenRouterModel.perception ? stage1 : stage2
             let json = ["choices": [["message": ["content": content]]]]
             return (200, try! JSONSerialization.data(withJSONObject: json))
         }
@@ -76,16 +72,13 @@ struct OpenRouterParserTests {
         )
     }
 
-    private let stage1Facts = """
-    {"amount":20000,"kind":"expense","days_ago":1,"merchant":"Kantin Kantor","bank":"","note":"bakso"}
-    """
-    private let stage2Result = """
+    private let result = """
     {"amount":20000,"type":"expense","days_ago":1,"merchant":"Kantin Kantor","note":"bakso","category_name":"Main Food","subcategory_name":""}
     """
 
-    @Test("parse teks: dua stage → draft lengkap + rawInput")
-    func parseTwoStage() async throws {
-        let parser = makeParser(stage1: stage1Facts, stage2: stage2Result)
+    @Test("parse teks: satu call → draft lengkap + rawInput")
+    func parseSingleCall() async throws {
+        let parser = makeParser(content: result)
         let draft = try await parser.parse("beli bakso 20k kemarin di kantin")
         #expect(draft.amount == 20000)
         #expect(draft.type == .expense)
@@ -96,39 +89,56 @@ struct OpenRouterParserTests {
         #expect(calendar.isDate(draft.date, inSameDayAs: calendar.date(byAdding: .day, value: -1, to: .now)!))
     }
 
-    @Test("parseReceipt: gambar dikirim ke model perception sbg image_url")
-    func receiptSendsImage() async throws {
+    @Test("parse teks memakai model tunggal dgn response_format (structured native)")
+    func usesSingleModelStructured() async throws {
+        nonisolated(unsafe) var capturedModel = ""
+        nonisolated(unsafe) var hadResponseFormat = false
+        let parser = makeParser(content: result) { body in
+            capturedModel = body["model"] as! String
+            hadResponseFormat = body["response_format"] != nil
+        }
+        _ = try await parser.parse("beli bakso 20k")
+        #expect(capturedModel == OpenRouterModel.model)
+        #expect(hadResponseFormat)
+    }
+
+    @Test("parseReceipt: gambar dikirim sbg image_url; tanpa personalisasi pre-call")
+    func receiptSendsImageNoPersonalization() async throws {
         nonisolated(unsafe) var sawImagePart = false
-        let parser = makeParser(stage1: stage1Facts, stage2: stage2Result) { body in
-            if body["model"] as! String == OpenRouterModel.perception {
-                let messages = body["messages"] as! [[String: Any]]
-                let parts = messages.last!["content"] as! [[String: Any]]
-                if parts.contains(where: { $0["type"] as? String == "image_url" }) {
-                    sawImagePart = true
-                }
+        nonisolated(unsafe) var systemText = ""
+        let parser = makeParser(
+            content: result,
+            personalization: StubPersonalization(snippet: "SHOULD NOT APPEAR")
+        ) { body in
+            let messages = body["messages"] as! [[String: Any]]
+            let userParts = messages.last!["content"] as! [[String: Any]]
+            if userParts.contains(where: { $0["type"] as? String == "image_url" }) {
+                sawImagePart = true
             }
+            let systemParts = messages.first!["content"] as! [[String: Any]]
+            systemText = systemParts.first!["text"] as! String
         }
         let draft = try await parser.parseReceipt(image: Data([0xFF, 0xD8]))
         #expect(sawImagePart)
         #expect(draft.amount == 20000)
+        // Trade-off didokumentasikan: resi tak dapat personalisasi pre-call
+        // (merchant belum diketahui sebelum model membaca gambar).
+        #expect(!systemText.contains("SHOULD NOT APPEAR"))
     }
 
-    @Test("Snippet personalisasi masuk ke instruksi stage 2")
-    func personalizationInjected() async throws {
-        nonisolated(unsafe) var stage2System = ""
+    @Test("parse teks: snippet personalisasi masuk ke instruksi (pre-call, dari rawInput)")
+    func personalizationInjectedForText() async throws {
+        nonisolated(unsafe) var systemText = ""
         let parser = makeParser(
-            stage1: stage1Facts,
-            stage2: stage2Result,
+            content: result,
             personalization: StubPersonalization(snippet: "indomaret → Main Food (kuat)")
         ) { body in
-            if body["model"] as! String == OpenRouterModel.generator {
-                let messages = body["messages"] as! [[String: Any]]
-                let parts = messages.first!["content"] as! [[String: Any]]
-                stage2System = parts.first!["text"] as! String
-            }
+            let messages = body["messages"] as! [[String: Any]]
+            let systemParts = messages.first!["content"] as! [[String: Any]]
+            systemText = systemParts.first!["text"] as! String
         }
         _ = try await parser.parse("belanja indomaret 50k")
-        #expect(stage2System.contains("indomaret → Main Food"))
+        #expect(systemText.contains("indomaret → Main Food"))
     }
 
     @Test("availability mengikuti keberadaan key")
@@ -147,9 +157,9 @@ struct OpenRouterParserTests {
         #expect(keyed.availability == .available)
     }
 
-    @Test("Stage 1 JSON rusak → parsingFailed siap-tampil")
-    func malformedStage1() async {
-        let parser = makeParser(stage1: "bukan json", stage2: stage2Result)
+    @Test("JSON rusak → parsingFailed siap-tampil")
+    func malformedResponse() async {
+        let parser = makeParser(content: "bukan json")
         do {
             _ = try await parser.parse("x")
             Issue.record("harus melempar")
@@ -158,7 +168,7 @@ struct OpenRouterParserTests {
         } catch { Issue.record("tipe error salah") }
     }
 
-    // MARK: - Mapping murni (port dari suite lama ServicesTests)
+    // MARK: - Mapping murni
 
     @Test("Mapping GeneratedTransaction → draft: type tak dikenal → expense, daysAgo negatif → hari ini, amount negatif → 0")
     func mappingEdgeCases() {
@@ -173,29 +183,6 @@ struct OpenRouterParserTests {
         #expect(draft.type == .expense)
         #expect(calendar.isDate(draft.date, inSameDayAs: now))
         #expect(draft.rawInput == "raw")
-    }
-
-    @Test("extractJSONObject: bersih dari fences/prosa/reasoning")
-    func jsonExtraction() throws {
-        func extract(_ s: String) -> String? {
-            OpenRouterParser.extractJSONObject(from: Data(s.utf8))
-                .flatMap { String(data: $0, encoding: .utf8) }
-        }
-        #expect(extract("```json\n{\"a\":1}\n```") == "{\"a\":1}")
-        #expect(extract("Sure! Here it is: {\"a\": {\"b\": 2}} done.") == "{\"a\": {\"b\": 2}}")
-        // Kurung dalam string literal tidak mengganggu penghitungan.
-        #expect(extract(#"{"note":"harga {promo}"}"#) == #"{"note":"harga {promo}"}"#)
-        #expect(extract("no json here") == nil)
-    }
-
-    @Test("Stage 1 membungkus JSON dgn fences → tetap ter-decode")
-    func stage1WithFences() async throws {
-        let parser = makeParser(
-            stage1: "```json\n\(stage1Facts)\n```",
-            stage2: stage2Result
-        )
-        let draft = try await parser.parse("beli bakso 20k")
-        #expect(draft.amount == 20000)
     }
 
     @Test("sanitizedRupiah membulatkan artefak floating point")
