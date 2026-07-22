@@ -121,6 +121,8 @@ public struct OpenRouterParser: TransactionParsing {
         {"amount": number (full rupiah), "kind": "expense"|"income"|"transfer", \
         "days_ago": integer, "merchant": string, "bank": string, "note": string}
         """
+        let clock = ContinuousClock()
+        let start = clock.now
         let data = try await client.completeStructured(
             model: OpenRouterModel.perception,
             messages: [.system(promptJSON), .user(parts)],
@@ -128,6 +130,7 @@ public struct OpenRouterParser: TransactionParsing {
             schemaJSON: Self.perceptionSchema,
             structured: false
         )
+        parserLog.info("stage1 (perception) selesai dalam \(clock.now - start, privacy: .public)")
         guard let jsonData = Self.extractJSONObject(from: data),
               let facts = try? JSONDecoder().decode(PerceivedFacts.self, from: jsonData) else {
             parserLog.error("decode stage1 gagal (\(data.count) bytes)")
@@ -203,12 +206,15 @@ public struct OpenRouterParser: TransactionParsing {
         "merchant":"\(Self.escaped(facts.merchant))","bank":"\(Self.escaped(facts.bank))",\
         "note":"\(Self.escaped(facts.note))"}
         """
+        let clock = ContinuousClock()
+        let start = clock.now
         let data = try await client.completeStructured(
             model: OpenRouterModel.generator,
             messages: [.system(instruction), .user([.text(factsJSON)])],
             schemaName: "generated_transaction",
             schemaJSON: Self.generationSchema
         )
+        parserLog.info("stage2 (generator) selesai dalam \(clock.now - start, privacy: .public)")
         do {
             let generated = try JSONDecoder().decode(GeneratedTransaction.self, from: data)
             return generated.draft(rawInput: rawInput)
