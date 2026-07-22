@@ -62,12 +62,20 @@ public struct OpenRouterClient: Sendable {
     /// omni :free) — bila true di model tsb, OpenRouter membalas "No endpoints
     /// found that can handle the requested parameters" (terverifikasi lewat
     /// models API `supported_parameters`).
+    ///
+    /// `reasoningEffort`: kedua model produksi (Nemotron :reasoning, gpt-oss)
+    /// selalu "berpikir" sebelum menjawab — diukur live 16s+7s untuk satu resi.
+    /// Tugas kita ekstraksi/klasifikasi sederhana, bukan penalaran berlapis, jadi
+    /// budget reasoning dipotong ke "low" (bukan `enabled:false` — beberapa model
+    /// mewajibkan reasoning dan MENOLAK permintaan yang mematikannya total;
+    /// docs.openrouter.ai/guides/best-practices/reasoning-tokens).
     public func completeStructured(
         model: String,
         messages: [ORChatMessage],
         schemaName: String,
         schemaJSON: String,
-        structured: Bool = true
+        structured: Bool = true,
+        reasoningEffort: String? = "low"
     ) async throws -> Data {
         guard let apiKey = keyStore.read(), !apiKey.isEmpty else {
             throw TransactionParsingError.modelUnavailable(
@@ -84,7 +92,8 @@ public struct OpenRouterClient: Sendable {
         request.setValue("AkhnaFin", forHTTPHeaderField: "X-Title")
         request.httpBody = try Self.body(
             model: model, messages: messages,
-            schemaName: schemaName, schemaJSON: schemaJSON, structured: structured
+            schemaName: schemaName, schemaJSON: schemaJSON,
+            structured: structured, reasoningEffort: reasoningEffort
         )
 
         let (data, response): (Data, URLResponse)
@@ -117,12 +126,16 @@ public struct OpenRouterClient: Sendable {
         messages: [ORChatMessage],
         schemaName: String,
         schemaJSON: String,
-        structured: Bool
+        structured: Bool,
+        reasoningEffort: String?
     ) throws -> Data {
         var payload: [String: Any] = [
             "model": model,
             "messages": messages.map(serialize(_:)),
         ]
+        if let reasoningEffort {
+            payload["reasoning"] = ["effort": reasoningEffort]
+        }
         if structured {
             let schema = try JSONSerialization.jsonObject(with: Data(schemaJSON.utf8))
             payload["response_format"] = [
