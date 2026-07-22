@@ -78,6 +78,45 @@ Root cause (models API `supported_parameters`, otoritatif):
 - Alternatif (belum dipakai): `openai/gpt-oss-120b` paid ($0.03/M) bila mau 120b
   — ganti satu konstanta `OpenRouterModel.generator`.
 
+## 5c. Collapse 2-stage → 1-stage (permintaan user, setelah data live)
+
+User ukur live sebelum fix reasoning: 23.2s (16.1+7.1). Setelah `reasoning.effort:
+"low"`: **7.9s** (6.7+1.16) — user tetap minta lebih efisien: satu model saja,
+kategori sepenuhnya dibantu `SignalRepository` (bukan cuma hint prompt).
+
+Riset kandidat model tunggal gratis + multimodal (via `GET /api/v1/models`,
+`supported_parameters`, uptime per-provider):
+
+| Model | Params aktif | Structured native | Uptime provider |
+|---|---|---|---|
+| **google/gemma-4-26b-a4b-it:free** ✅ dipilih | MoE, **3.8B/token** | ✅ | 2 provider, ~99% |
+| google/gemma-4-31b-it:free | Dense, 30.7B | ✅ | 1 provider, ~99% |
+| nvidia/nemotron-nano-12b-v2-vl:free | 12B | ❌ | 1 provider, **74%** |
+
+Dipilih **Gemma 4 26B A4B**: MoE paling ringan + native `response_format`
+(hapus workaround `extractJSONObject` yang jadi tak relevan) + provider ganda
+(lebih stabil dari opsi 1-provider). Keputusan user tambahan: kategori **tetap
+ditebak model** (bukan murni lookup `SignalRepository`) — daftar kategori +
+snippet personalisasi tetap masuk prompt SATU call itu; `SignalRepository`
+tetap sumber personalisasi, bukan generator kedua.
+
+**Arsitektur baru:** `OpenRouterParser.complete()` — satu method, satu call,
+schema = fields lama `GeneratedTransaction` (amount/type/days_ago/merchant/
+note/category_name/subcategory_name). `PerceivedFacts`, `perceive()`,
+`generate()`, `extractJSONObject` (khusus workaround non-structured Nemotron)
+dihapus — semua dead code stage-2 terpisah.
+
+**Trade-off didokumentasikan:** personalisasi pre-call hanya jalan untuk jalur
+teks (rawInput sudah berisi kandidat merchant/keyword sebelum call). Jalur
+resi TIDAK dapat personalisasi pre-call — merchant baru diketahui model
+SETELAH ia membaca gambar, dalam call yang sama; tak ada call kedua untuk
+memakainya. Kategori resi tetap bisa benar lewat daftar kategori di prompt,
+hanya tanpa dorongan riwayat personal.
+
+Commit: lihat log setelah `ff4b2bb` (reasoning fix) — rewrite `OpenRouterParser`
++ `OpenRouterModel` + test suite. 67 test hijau; build SUCCEEDED. Timing satu-
+call BELUM diukur live (menunggu user).
+
 ## 6. Backlog terkait
 
 - Optimasi: lipat 2 call jadi 1 call multimodal bila latensi free tier terasa.
