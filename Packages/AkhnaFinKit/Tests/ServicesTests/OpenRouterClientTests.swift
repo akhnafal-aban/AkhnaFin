@@ -82,6 +82,23 @@ struct OpenRouterClientTests {
         #expect((body["provider"] as! [String: Any])["require_parameters"] as? Bool == true)
     }
 
+    @Test("structured:false → tanpa response_format & tanpa provider (routing bebas)")
+    func nonStructuredOmitsSchema() async throws {
+        nonisolated(unsafe) var captured: URLRequest?
+        MockURLProtocol.handler = { request in
+            captured = request
+            return (200, Self.success(content: #"{"x":"ok"}"#))
+        }
+        _ = try await makeClient().completeStructured(
+            model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+            messages: [.user([.text("halo")])],
+            schemaName: "test", schemaJSON: schema, structured: false
+        )
+        let body = try JSONSerialization.jsonObject(with: #require(captured?.httpBody)) as! [String: Any]
+        #expect(body["response_format"] == nil)
+        #expect(body["provider"] == nil)
+    }
+
     @Test("Gambar diserialisasi sebagai data URL image_url")
     func imagePart() async throws {
         nonisolated(unsafe) var captured: URLRequest?

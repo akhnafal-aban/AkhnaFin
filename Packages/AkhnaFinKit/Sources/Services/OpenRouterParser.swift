@@ -111,20 +111,31 @@ public struct OpenRouterParser: TransactionParsing {
             unless a clear date shows otherwise.
             """
         }
+        // Nemotron omni :free TAK dukung structured outputs → structured:false,
+        // minta JSON lewat prompt, lalu ekstrak objek JSON secara toleran
+        // (model reasoning bisa menyisipkan penjelasan/markdown).
+        let promptJSON = instruction + """
+
+
+        Return ONLY a single JSON object, no markdown fences, no commentary:
+        {"amount": number (full rupiah), "kind": "expense"|"income"|"transfer", \
+        "days_ago": integer, "merchant": string, "bank": string, "note": string}
+        """
         let data = try await client.completeStructured(
             model: OpenRouterModel.perception,
-            messages: [.system(instruction), .user(parts)],
+            messages: [.system(promptJSON), .user(parts)],
             schemaName: "perceived_facts",
-            schemaJSON: Self.perceptionSchema
+            schemaJSON: Self.perceptionSchema,
+            structured: false
         )
-        do {
-            return try JSONDecoder().decode(PerceivedFacts.self, from: data)
-        } catch {
-            parserLog.error("decode stage1 gagal: \(String(describing: error), privacy: .public)")
+        guard let jsonData = Self.extractJSONObject(from: data),
+              let facts = try? JSONDecoder().decode(PerceivedFacts.self, from: jsonData) else {
+            parserLog.error("decode stage1 gagal (\(data.count) bytes)")
             throw TransactionParsingError.parsingFailed(
                 "Gagal memahami input itu. Coba tulis ulang lebih jelas."
             )
         }
+        return facts
     }
 
     // MARK: - Stage 2: Transaction generator (gpt-oss-120b)
@@ -226,6 +237,39 @@ public struct OpenRouterParser: TransactionParsing {
         names
             .map { name in glossary[name].map { "\(name) (= \($0))" } ?? name }
             .joined(separator: ", ")
+    }
+
+    /// Ekstrak objek JSON pertama yang seimbang dari respons non-structured
+    /// (model reasoning bisa membungkus dengan ```json fences atau prosa).
+    /// Menghitung kurung dengan menghormati string literal & escape.
+    static func extractJSONObject(from data: Data) -> Data? {
+        guard let text = String(data: data, encoding: .utf8),
+              let start = text.firstIndex(of: "{") else { return nil }
+        var depth = 0
+        var inString = false
+        var escaped = false
+        var index = start
+        while index < text.endIndex {
+            let char = text[index]
+            if inString {
+                if escaped { escaped = false }
+                else if char == "\\" { escaped = true }
+                else if char == "\"" { inString = false }
+            } else {
+                switch char {
+                case "\"": inString = true
+                case "{": depth += 1
+                case "}":
+                    depth -= 1
+                    if depth == 0 {
+                        return String(text[start...index]).data(using: .utf8)
+                    }
+                default: break
+                }
+            }
+            index = text.index(after: index)
+        }
+        return nil
     }
 
     private static func escaped(_ string: String) -> String {

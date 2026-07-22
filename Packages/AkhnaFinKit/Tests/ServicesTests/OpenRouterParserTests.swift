@@ -175,6 +175,29 @@ struct OpenRouterParserTests {
         #expect(draft.rawInput == "raw")
     }
 
+    @Test("extractJSONObject: bersih dari fences/prosa/reasoning")
+    func jsonExtraction() throws {
+        func extract(_ s: String) -> String? {
+            OpenRouterParser.extractJSONObject(from: Data(s.utf8))
+                .flatMap { String(data: $0, encoding: .utf8) }
+        }
+        #expect(extract("```json\n{\"a\":1}\n```") == "{\"a\":1}")
+        #expect(extract("Sure! Here it is: {\"a\": {\"b\": 2}} done.") == "{\"a\": {\"b\": 2}}")
+        // Kurung dalam string literal tidak mengganggu penghitungan.
+        #expect(extract(#"{"note":"harga {promo}"}"#) == #"{"note":"harga {promo}"}"#)
+        #expect(extract("no json here") == nil)
+    }
+
+    @Test("Stage 1 membungkus JSON dgn fences → tetap ter-decode")
+    func stage1WithFences() async throws {
+        let parser = makeParser(
+            stage1: "```json\n\(stage1Facts)\n```",
+            stage2: stage2Result
+        )
+        let draft = try await parser.parse("beli bakso 20k")
+        #expect(draft.amount == 20000)
+    }
+
     @Test("sanitizedRupiah membulatkan artefak floating point")
     func rupiahSanitizer() {
         #expect(sanitizedRupiah(19999.999999999996) == 20000)

@@ -13,7 +13,7 @@ input (teks/suara/gambar) → TransactionParsing → TransactionDraft (editable)
 
 Hasil AI **selalu** menjadi draft yang bisa diedit sebelum disimpan — jangan pernah commit langsung tanpa konfirmasi user.
 
-**AI = OpenRouter 2-stage (PLAN-006, menggantikan Foundation Models):** `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free` (perception: teks/gambar) → `openai/gpt-oss-120b:free` (generator, structured outputs strict). API key di Keychain (`OpenRouterKeyStore`), diisi user via Pengaturan; tanpa key → graceful state. Personalisasi kategori = knowledge-graph mini `CategorySignal` (edge berbobot di SwiftData; commit jalur AI merekam, prompt stage-2 membawa asosiasi relevan).
+**AI = OpenRouter 2-stage (PLAN-006, menggantikan Foundation Models):** `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free` (perception: teks/gambar, **TAK dukung structured outputs → dipanggil `structured:false`, JSON diekstrak toleran**) → `openai/gpt-oss-20b:free` (generator, structured outputs strict; `gpt-oss-120b:free` TIDAK ADA di OpenRouter — hanya paid). **Gotcha:** `provider.require_parameters:true` HANYA saat model dukung `response_format`; jika tidak → error "No endpoints found that can handle the requested parameters". Cek dukungan via `GET /api/v1/models` field `supported_parameters`. API key di Keychain (`OpenRouterKeyStore`), diisi user via Pengaturan; tanpa key → graceful state. Personalisasi kategori = knowledge-graph mini `CategorySignal` (edge berbobot di SwiftData; commit jalur AI merekam, prompt stage-2 membawa asosiasi relevan).
 
 ## Commands
 

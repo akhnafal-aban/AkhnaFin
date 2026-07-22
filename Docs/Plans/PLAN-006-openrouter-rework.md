@@ -63,6 +63,21 @@ lama terverifikasi tanpa crash).
   Resi → draft + gambar; snippet Siri Simpan/Edit/Batal di device; cek koreksi
   kategori 2× lalu lihat saran berubah.
 
+## 5b. Fix pasca-verifikasi live user (routing)
+
+Live pertama gagal: **"No endpoints found that can handle the requested parameters."**
+Root cause (models API `supported_parameters`, otoritatif):
+- Nemotron omni `:free` TIDAK punya `response_format` → `json_schema strict` +
+  `require_parameters:true` tak punya endpoint. **Fix:** Stage 1 `structured:false`,
+  minta JSON via prompt, ekstrak objek JSON toleran (`extractJSONObject`, hormati
+  string literal & fences reasoning).
+- `openai/gpt-oss-120b:free` **tidak ada** (hanya paid). **Fix:** Stage 2 →
+  `openai/gpt-oss-20b:free` (keluarga gpt-oss, gratis, dukung structured outputs).
+- Client: parameter `structured` — set `response_format`+`require_parameters`
+  HANYA bila true. 67 test hijau.
+- Alternatif (belum dipakai): `openai/gpt-oss-120b` paid ($0.03/M) bila mau 120b
+  — ganti satu konstanta `OpenRouterModel.generator`.
+
 ## 6. Backlog terkait
 
 - Optimasi: lipat 2 call jadi 1 call multimodal bila latensi free tier terasa.
