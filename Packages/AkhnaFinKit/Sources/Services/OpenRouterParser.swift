@@ -70,17 +70,27 @@ public struct OpenRouterParser: TransactionParsing {
 
     // MARK: - TransactionParsing
 
+    /// Proyeksi "paksa transaksi" dari jalur klasifikasi tunggal — dipakai batch
+    /// dan engine yang tak paham hutang. Hasil hutang digulung jadi draft
+    /// transaksi (tetap dikonfirmasi user; tak ada commit bentuk baru diam-diam).
     public func parse(_ text: String) async throws -> TransactionDraft {
-        // Jalur lama (intent Siri, batch): hasil hutang pun dipaksa jadi draft
-        // transaksi agar tak ada jalur commit tanpa konfirmasi bentuk baru.
-        let interval = parserSignposter.beginInterval("parse")
-        defer { parserSignposter.endInterval("parse", interval) }
-        let snippet = await personalization?.contextSnippet(for: text) ?? ""
-        let generated = try await complete(parts: [.text(text)], hint: .sentence, personalizationSnippet: snippet, imageRole: false)
-        return generated.draft(rawInput: text)
+        switch try await parseEntry(text) {
+        case .transaction(let draft):
+            return draft
+        case .debt(let debt):
+            // Hutang lewat jalur transaksi-only: pertahankan nominal & catatan.
+            return TransactionDraft(
+                amount: debt.amount, type: .expense, date: .now,
+                note: debt.note.isEmpty ? debt.rawInput : debt.note,
+                merchant: debt.counterparty, categoryName: "", subcategoryName: "",
+                rawInput: text
+            )
+        }
     }
 
-    /// PLAN-008: kalimat bisa menghasilkan transaksi ATAU catatan hutang.
+    /// SATU jalur klasifikasi (PLAN-008 + penyederhanaan sesi 03): kalimat →
+    /// transaksi kas ATAU catatan hutang. Semua caller (App Intent, QuickAdd,
+    /// batch via `parse`) bermuara ke sini.
     public func parseEntry(_ text: String) async throws -> QuickEntry {
         let interval = parserSignposter.beginInterval("parse")
         defer { parserSignposter.endInterval("parse", interval) }
@@ -190,11 +200,22 @@ public struct OpenRouterParser: TransactionParsing {
         func debtDraft(rawInput: String) -> DebtDraft {
             DebtDraft(
                 counterparty: counterparty,
-                direction: direction == "owed_to_me" ? .owedToMe : .iOwe,
+                direction: Self.mapDirection(direction),
                 amount: sanitizedRupiah(amount),
                 note: note,
                 rawInput: rawInput
             )
+        }
+
+        /// Peta arah model → enum. Eksplisit (bukan ternary senyap): nilai tak
+        /// dikenal / "none" (model ragu) → default deterministik `.iOwe` — kasus
+        /// dominan (paylater, pinjam ke teman). User tetap koreksi di form.
+        static func mapDirection(_ raw: String) -> DebtDirection {
+            switch raw {
+            case "owed_to_me": .owedToMe
+            case "i_owe": .iOwe
+            default: .iOwe
+            }
         }
 
         /// Mapping murni (tanpa network) ke draft — unit-testable.
@@ -321,15 +342,21 @@ public struct OpenRouterParser: TransactionParsing {
         parserLog.info("call \(slug, privacy: .public) selesai dalam \(clock.now - start, privacy: .public)")
 
         // Decode toleran utk SEMUA mode: sebagian provider membocorkan teks di
-        // sekitar JSON meski structured (mis. channel reasoning gpt-oss) —
-        // coba strict dulu, gagal → ekstrak objek JSON seimbang.
-        if let generated = try? JSONDecoder().decode(GeneratedTransaction.self, from: data) {
+        // sekitar JSON meski structured (mis. channel reasoning gpt-oss).
+        // Strict dulu (seluruh content); gagal → tiap objek JSON seimbang di
+        // dalamnya, TAPI jangan ambil yang pertama secara buta — model bisa
+        // membocorkan objek reasoning ("{\"thinking\":…}") SEBELUM jawaban.
+        // Pilih objek pertama yang bernominal (>0), sinyal record sungguhan.
+        if let generated = try? JSONDecoder().decode(GeneratedTransaction.self, from: data),
+           generated.amount > 0 {
             return generated
         }
-        if let extracted = Self.extractJSONObject(from: data),
-           let generated = try? JSONDecoder().decode(GeneratedTransaction.self, from: extracted) {
-            parserLog.info("decode sukses via ekstraksi toleran (content tak murni JSON)")
-            return generated
+        for candidate in Self.extractJSONObjects(from: data) {
+            if let generated = try? JSONDecoder().decode(GeneratedTransaction.self, from: candidate),
+               generated.amount > 0 {
+                parserLog.info("decode sukses via ekstraksi toleran (content tak murni JSON)")
+                return generated
+            }
         }
         // Kasus double-encoded: content = STRING JSON berisi objek ("{\"a\":1}").
         if let unwrapped = try? JSONDecoder().decode(String.self, from: data),
@@ -392,15 +419,18 @@ public struct OpenRouterParser: TransactionParsing {
         )
     }
 
-    /// Ekstrak objek JSON pertama yang seimbang dari respons non-structured
-    /// (model bisa membungkus dgn fences/prosa). Hormati string literal & escape.
-    static func extractJSONObject(from data: Data) -> Data? {
-        guard let text = String(data: data, encoding: .utf8),
-              let start = text.firstIndex(of: "{") else { return nil }
+    /// Ekstrak SEMUA objek JSON top-level yang seimbang, berurut, dari respons
+    /// non-structured (model bisa membungkus dgn fences/prosa, atau membocorkan
+    /// objek reasoning sebelum jawaban). Hormati string literal & escape.
+    /// Pemanggil memilih kandidat yang bermakna — bukan sekadar yang pertama.
+    static func extractJSONObjects(from data: Data) -> [Data] {
+        guard let text = String(data: data, encoding: .utf8) else { return [] }
+        var objects: [Data] = []
         var depth = 0
         var inString = false
         var escaped = false
-        var index = start
+        var objectStart: String.Index?
+        var index = text.startIndex
         while index < text.endIndex {
             let char = text[index]
             if inString {
@@ -410,18 +440,21 @@ public struct OpenRouterParser: TransactionParsing {
             } else {
                 switch char {
                 case "\"": inString = true
-                case "{": depth += 1
+                case "{":
+                    if depth == 0 { objectStart = index }
+                    depth += 1
                 case "}":
                     depth -= 1
-                    if depth == 0 {
-                        return String(text[start...index]).data(using: .utf8)
+                    if depth == 0, let start = objectStart {
+                        objects.append(Data(text[start...index].utf8))
+                        objectStart = nil
                     }
                 default: break
                 }
             }
             index = text.index(after: index)
         }
-        return nil
+        return objects
     }
 
     // MARK: - Glossary kategori (port dari parser lama — BUG-1a)
