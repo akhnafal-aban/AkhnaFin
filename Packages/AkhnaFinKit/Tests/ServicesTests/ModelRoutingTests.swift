@@ -241,6 +241,36 @@ struct ModelRoutingTests {
         #expect(draft.note == "kopi")
     }
 
+    @Test("Model balas key-value/YAML (gpt-oss abai JSON) → parseEntry tetap dapat DebtDraft")
+    func keyValueFallbackDebt() async throws {
+        // Payload live persis dari gpt-oss-20b:free: alias owner/keterangan/category.
+        let yaml = "keterangan: utang ke rea 10k kopi\namount: 10000\nowner: i_owe\ncounterparty: Rea\nrecord_kind: debt\ncategory: \"\" 🙃"
+        RoutingMockURLProtocol.handler = { _ in
+            let json = ["choices": [["message": ["content": yaml]]]]
+            return (200, try! JSONSerialization.data(withJSONObject: json))
+        }
+        let parser = makeOpenRouterParser(store: MockModelPreferenceStore())
+        guard case .debt(let draft) = try await parser.parseEntry("utang ke rea 10k kopi") else {
+            Issue.record("harus debt"); return
+        }
+        #expect(draft.counterparty == "Rea")
+        #expect(draft.direction == .iOwe)
+        #expect(draft.amount == 10000)
+        #expect(draft.note == "utang ke rea 10k kopi")
+    }
+
+    @Test("Key-value tanpa nominal → nil (jangan terima teks acak)")
+    func keyValueRejectsGarbage() async {
+        RoutingMockURLProtocol.handler = { _ in
+            let json = ["choices": [["message": ["content": "halo apa kabar\nini bukan transaksi"]]]]
+            return (200, try! JSONSerialization.data(withJSONObject: json))
+        }
+        let parser = makeOpenRouterParser(store: MockModelPreferenceStore())
+        await #expect(throws: TransactionParsingError.self) {
+            _ = try await parser.parse("halo")
+        }
+    }
+
     @Test("record_kind debt TANPA counterparty → jatuh ke transaksi (guard isDebt)")
     func debtWithoutCounterpartyFallsBack() async throws {
         let odd = """
