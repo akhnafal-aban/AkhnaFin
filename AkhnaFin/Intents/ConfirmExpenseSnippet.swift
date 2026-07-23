@@ -164,3 +164,35 @@ struct DraftSnippetView: View {
         }
     }
 }
+
+/// Kartu informasi saat App Intent mendeteksi HUTANG (bukan transaksi kas).
+/// Snippet hutang penuh (Simpan/Edit di background) ditunda — sementara arahkan
+/// user ke Text Entry di app, tempat DebtFormView menyimpannya (pipeline sakral).
+struct DebtDeferralSnippetView: View {
+    let draft: DebtDraft
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "person.2.badge.gearshape")
+                    .foregroundStyle(.tint)
+                Text(CurrencyFormatter.string(from: draft.amount, currencyCode: "IDR"))
+                    .font(.title2.bold().monospacedDigit())
+                Spacer()
+                Text(draft.direction.displayName)
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(.quaternary, in: Capsule())
+            }
+            if !draft.counterparty.isEmpty {
+                Label(draft.counterparty, systemImage: "person")
+                    .font(.subheadline)
+            }
+            Text("Terdeteksi sebagai catatan hutang. Buka **Text Entry** di app untuk menyimpannya.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+    }
+}

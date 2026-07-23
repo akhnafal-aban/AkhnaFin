@@ -36,11 +36,12 @@ struct LogExpenseIntent: AppIntent {
 
         // Parse dengan pagar waktu — error granular, tidak pernah stuck (BUG-2b).
         // Gagal → lempar QuickLogError (LocalizedError): Siri menampilkan pesannya.
-        let draft = try await QuickLogPipeline(parser: dependencies.parser).parseDraft(from: text)
-        intentLog.info("LogExpense parse sukses")
+        // Satu jalur klasifikasi (sesi 03): transaksi ATAU hutang.
+        let entry = try await QuickLogPipeline(parser: dependencies.parser).parseEntry(from: text)
+        intentLog.info("LogExpense parse sukses (\(entry.isDebt ? "hutang" : "transaksi", privacy: .public))")
 
-        // Snippet interaktif sebagai HASIL: tombol Simpan/Edit/Batal yang menutup.
-        return stashAndPresentDraft(draft, source: .appIntent)
+        // Transaksi → snippet aksi penuh; hutang → kartu deferral ke app.
+        return presentQuickEntry(entry, source: .appIntent)
     }
 }
 
