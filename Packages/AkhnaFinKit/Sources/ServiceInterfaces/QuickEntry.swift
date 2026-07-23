@@ -30,6 +30,11 @@ public struct DebtDraft: Sendable, Equatable, Codable {
 public enum QuickEntry: Sendable, Equatable {
     case transaction(TransactionDraft)
     case debt(DebtDraft)
+
+    public var isDebt: Bool {
+        if case .debt = self { return true }
+        return false
+    }
 }
 
 extension TransactionParsing {
