@@ -32,13 +32,17 @@ struct AkhnaFinApp: App {
         let categories = (try? context.fetch(FetchDescriptor<TransactionCategory>())) ?? []
         let calendar = Calendar.current
         for offset in 0..<24 {
+            let type: TransactionType = offset % 8 == 7 ? .income : .expense
+            // Kategori WAJIB se-jenis: expense tak boleh kena Gaji/Bonus (income),
+            // dan sebaliknya — kalau tidak, demo dashboard tampil ngawur.
+            let sameKind = categories.filter { $0.kind == type }
             let transaction = MoneyTransaction(
                 amount: Decimal((offset % 7 + 1) * 8500),
-                type: offset % 8 == 7 ? .income : .expense,
+                type: type,
                 date: calendar.date(byAdding: .day, value: -(offset % 27), to: .now)!,
                 note: "Demo \(offset)",
                 source: .manual,
-                category: categories.isEmpty ? nil : categories[offset % categories.count]
+                category: sameKind.isEmpty ? nil : sameKind[offset % sameKind.count]
             )
             context.insert(transaction)
         }
