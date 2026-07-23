@@ -137,16 +137,32 @@ public struct OpenRouterParser: TransactionParsing {
         /// melewatkannya) — default aman: transaksi.
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            amount = try container.decode(Double.self, forKey: .amount)
-            type = try container.decode(String.self, forKey: .type)
-            daysAgo = try container.decodeIfPresent(Int.self, forKey: .daysAgo) ?? 0
-            merchant = try container.decodeIfPresent(String.self, forKey: .merchant) ?? ""
-            note = try container.decodeIfPresent(String.self, forKey: .note) ?? ""
-            categoryName = try container.decodeIfPresent(String.self, forKey: .categoryName) ?? ""
-            subcategoryName = try container.decodeIfPresent(String.self, forKey: .subcategoryName) ?? ""
-            recordKind = try container.decodeIfPresent(String.self, forKey: .recordKind) ?? "transaction"
-            counterparty = try container.decodeIfPresent(String.self, forKey: .counterparty) ?? ""
-            direction = try container.decodeIfPresent(String.self, forKey: .direction) ?? "none"
+            // Lentur: model/provider tertentu mengirim angka sebagai string
+            // ("20000") atau melewatkan field — jangan gagalkan seluruh decode.
+            if let value = try? container.decode(Double.self, forKey: .amount) {
+                amount = value
+            } else if let text = try? container.decode(String.self, forKey: .amount),
+                      let value = Double(text.replacingOccurrences(of: ".", with: "")
+                          .replacingOccurrences(of: ",", with: "")) {
+                amount = value
+            } else {
+                amount = 0
+            }
+            type = (try? container.decodeIfPresent(String.self, forKey: .type)) ?? "expense"
+            if let days = try? container.decodeIfPresent(Int.self, forKey: .daysAgo) {
+                daysAgo = days
+            } else if let text = try? container.decodeIfPresent(String.self, forKey: .daysAgo) {
+                daysAgo = Int(text) ?? 0
+            } else {
+                daysAgo = 0
+            }
+            merchant = (try? container.decodeIfPresent(String.self, forKey: .merchant)) ?? ""
+            note = (try? container.decodeIfPresent(String.self, forKey: .note)) ?? ""
+            categoryName = (try? container.decodeIfPresent(String.self, forKey: .categoryName)) ?? ""
+            subcategoryName = (try? container.decodeIfPresent(String.self, forKey: .subcategoryName)) ?? ""
+            recordKind = (try? container.decodeIfPresent(String.self, forKey: .recordKind)) ?? "transaction"
+            counterparty = (try? container.decodeIfPresent(String.self, forKey: .counterparty)) ?? ""
+            direction = (try? container.decodeIfPresent(String.self, forKey: .direction)) ?? "none"
         }
 
         init(
@@ -315,7 +331,16 @@ public struct OpenRouterParser: TransactionParsing {
             parserLog.info("decode sukses via ekstraksi toleran (content tak murni JSON)")
             return generated
         }
-        parserLog.error("decode gagal (\(data.count) bytes, structured=\(structured))")
+        // Kasus double-encoded: content = STRING JSON berisi objek ("{\"a\":1}").
+        if let unwrapped = try? JSONDecoder().decode(String.self, from: data),
+           let generated = try? JSONDecoder().decode(GeneratedTransaction.self, from: Data(unwrapped.utf8)) {
+            parserLog.info("decode sukses via unwrap string ganda")
+            return generated
+        }
+        // Diagnostik: tampilkan isi mentah (terpotong) — tanpa ini kegagalan
+        // berikutnya tak bisa didiagnosis dari log.
+        let preview = String(data: data.prefix(300), encoding: .utf8) ?? "<non-utf8>"
+        parserLog.error("decode gagal (\(data.count) bytes, structured=\(structured)): \(preview, privacy: .public)")
         throw TransactionParsingError.parsingFailed(
             "Gagal memahami input itu. Coba tulis ulang lebih jelas."
         )
