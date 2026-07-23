@@ -1,5 +1,6 @@
 import SwiftUI
 import ServiceInterfaces
+import Services
 import Persistence
 
 /// Pengaturan: API key AI, kelola kategori, rekam lokasi, status iCloud.
@@ -7,6 +8,9 @@ struct SettingsView: View {
     let repository: TransactionRepository
     /// Keychain store API key OpenRouter (nil = section AI disembunyikan, mis. Preview).
     var keyStore: (any APIKeyStoring)?
+    /// Konfigurasi engine/model per peran (PLAN-007); nil = baris disembunyikan.
+    var modelPreferenceStore: (any ModelPreferenceStoring)?
+    var modelCatalog: OpenRouterModelCatalog?
 
     /// Toggle auto-capture lokasi saat commit dalam-app (default ON — keputusan Fase 0).
     @AppStorage("recordLocation") private var recordLocation = true
@@ -20,6 +24,18 @@ struct SettingsView: View {
             List {
                 if keyStore != nil {
                     aiSection
+                }
+
+                if let modelPreferenceStore, let modelCatalog {
+                    Section {
+                        NavigationLink {
+                            ModelSettingsView(store: modelPreferenceStore, catalog: modelCatalog)
+                        } label: {
+                            Label("Model AI", systemImage: "cpu")
+                        }
+                    } footer: {
+                        Text("Pilih engine per peran: teks & gambar bisa Apple lokal atau model OpenRouter pilihanmu.")
+                    }
                 }
 
                 Section("Data") {
