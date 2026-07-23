@@ -1,6 +1,12 @@
 import Foundation
+import OSLog
 import SwiftData
 import AkhnaFinCore
+
+/// Log kategori `Persistence` (sejajar `TransactionRepository`). Nama pihak =
+/// PII → dibiarkan default (interpolasi Logger meredaksi di Release); arah &
+/// nominal `.public` untuk diagnosis.
+private let debtLog = Logger(subsystem: "com.aban.AkhnaFin", category: "Persistence")
 
 /// Pintu tunggal operasi `DebtRecord` di atas `ModelContext` — pola yang sama
 /// dengan `TransactionRepository`. Read reaktif UI tetap via `@Query`.
@@ -43,12 +49,15 @@ public final class DebtRepository {
         )
         context.insert(record)
         try context.save()
+        debtLog.info("debt create: \(direction.rawValue, privacy: .public) principal=\(principal, privacy: .public) pihak=\(trimmed)")
         return record
     }
 
     public func delete(_ record: DebtRecord) throws {
+        let direction = record.direction.rawValue
         context.delete(record)  // payments ikut (cascade)
         try context.save()
+        debtLog.info("debt delete: \(direction, privacy: .public)")
     }
 
     /// Simpan mutasi langsung pada properti model (jalur edit).
@@ -89,6 +98,7 @@ public final class DebtRepository {
         payment.debt = record
         context.insert(payment)
         try context.save()
+        debtLog.info("debt payment: \(amount, privacy: .public) sisa=\(record.remaining, privacy: .public) lunas=\(record.isSettled, privacy: .public)")
         return payment
     }
 
