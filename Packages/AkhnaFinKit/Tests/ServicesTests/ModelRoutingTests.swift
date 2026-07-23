@@ -206,6 +206,41 @@ struct ModelRoutingTests {
         #expect(draft.note == "bakso")
     }
 
+    @Test("Decode lentur: amount sbg string + field hilang → tetap sukses")
+    func lenientFieldDecode() async throws {
+        // Sebagian model kirim amount sbg string & melewatkan field opsional.
+        let loose = #"{"amount":"20.000","type":"expense"}"#
+        RoutingMockURLProtocol.handler = { _ in
+            let json = ["choices": [["message": ["content": loose]]]]
+            return (200, try! JSONSerialization.data(withJSONObject: json))
+        }
+        let parser = makeOpenRouterParser(store: MockModelPreferenceStore())
+        let draft = try await parser.parse("beli sesuatu 20k")
+        #expect(draft.amount == 20000)
+        #expect(draft.type == .expense)
+    }
+
+    @Test("Decode double-encoded: content = string JSON berisi objek")
+    func doubleEncodedContent() async throws {
+        // content adalah STRING JSON (objek ter-escape) — bukan objek langsung.
+        RoutingMockURLProtocol.handler = { _ in
+            let inner = #"{"amount":15000,"type":"expense","days_ago":0,"merchant":"","note":"kopi","category_name":"","subcategory_name":"","record_kind":"transaction","counterparty":"","direction":"none"}"#
+            let json = ["choices": [["message": ["content": inner]]]]  // sudah string
+            // Bungkus lagi jadi string ganda:
+            let doubled = ["choices": [["message": ["content": String(data: try! JSONSerialization.data(withJSONObject: ["x": inner]), encoding: .utf8)!]]]]
+            _ = json
+            // Kirim content = JSON-string murni (bukan objek): "\"{...}\""
+            let stringContent = try! String(data: JSONEncoder().encode(inner), encoding: .utf8)!
+            _ = doubled
+            let payload = ["choices": [["message": ["content": stringContent]]]]
+            return (200, try! JSONSerialization.data(withJSONObject: payload))
+        }
+        let parser = makeOpenRouterParser(store: MockModelPreferenceStore())
+        let draft = try await parser.parse("kopi 15k")
+        #expect(draft.amount == 15000)
+        #expect(draft.note == "kopi")
+    }
+
     @Test("record_kind debt TANPA counterparty → jatuh ke transaksi (guard isDebt)")
     func debtWithoutCounterpartyFallsBack() async throws {
         let odd = """
