@@ -95,6 +95,11 @@ public struct OpenRouterClient: Sendable {
 
         var request = URLRequest(url: Self.endpoint)
         request.httpMethod = "POST"
+        // Pagar per-call: model free-tier cold-start bisa lama & variabel. Batasi
+        // tiap round-trip agar attempt lambat gagal bersih (URLError.timedOut →
+        // pesan koneksi) alih-alih menembus pagar total pipeline & memicu batal
+        // `-999 cancelled` (bug device sesi 03).
+        request.timeoutInterval = 30
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         // Atribusi opsional (docs quickstart) — bukan rahasia.

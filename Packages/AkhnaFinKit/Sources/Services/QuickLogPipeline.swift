@@ -21,15 +21,20 @@ public enum QuickLogError: LocalizedError, Equatable, Sendable {
 /// Berjalan di luar MainActor; hasil selalu `TransactionDraft` yang masih
 /// harus dikonfirmasi user sebelum commit.
 ///
-/// Timeout 25s: pipeline OpenRouter = dua call berantai (perception → generator)
-/// dengan latensi free-tier yang variabel.
+/// Timeout 45s = pagar total. `OpenRouterParser.complete()` sekarang satu call
+/// + tangga fallback hingga 3 attempt (structured+reasoning → structured →
+/// non-structured). Tangga HANYA memanjang pada 404 no-endpoints (cepat); pada
+/// timeout, attempt melempar langsung tanpa retry, jadi worst case ≈ satu call
+/// lambat + dua 404 cepat. Tiap call juga dibatasi per-request di
+/// `OpenRouterClient` (30s), yang mencegah cold-start free-tier menembus pagar
+/// ini dan memicu batal `-999` (bug device sesi 03).
 public struct QuickLogPipeline: Sendable {
     private let parser: any TransactionParsing
     private let timeout: Duration
 
     public init(
         parser: any TransactionParsing,
-        timeout: Duration = .seconds(25)
+        timeout: Duration = .seconds(45)
     ) {
         self.parser = parser
         self.timeout = timeout

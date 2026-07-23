@@ -286,6 +286,45 @@ struct ModelRoutingTests {
         }
     }
 
+    @Test("Objek reasoning bocor SEBELUM jawaban → pilih objek bernominal, bukan yang pertama")
+    func leakedObjectBeforeAnswer() async throws {
+        // gpt-oss harmony: channel reasoning kadang membocorkan objek JSON-nya
+        // sendiri sebelum jawaban. First-match akan mengambil objek "thinking"
+        // (decode lentur → amount 0). Harus melewatinya ke objek asli.
+        let leaked = """
+        {"thinking":"user beli bakso, ini transaksi biasa"}
+        {"amount":20000,"type":"expense","days_ago":0,"merchant":"Kantin","note":"bakso","category_name":"Main Food","subcategory_name":"","record_kind":"transaction","counterparty":"","direction":"none"}
+        """
+        RoutingMockURLProtocol.handler = { _ in
+            let json = ["choices": [["message": ["content": leaked]]]]
+            return (200, try! JSONSerialization.data(withJSONObject: json))
+        }
+        let parser = makeOpenRouterParser(store: MockModelPreferenceStore())
+        let draft = try await parser.parse("beli bakso 20k")
+        #expect(draft.amount == 20000)
+        #expect(draft.note == "bakso")
+    }
+
+    @Test("Arah hutang: owed_to_me→owedToMe; none→iOwe (default terdokumentasi)")
+    func debtDirectionMapping() async throws {
+        func debtDraft(direction: String) async throws -> DebtDraft {
+            let body = """
+            {"record_kind":"debt","amount":30000,"type":"expense","days_ago":0,"merchant":"","note":"","category_name":"","subcategory_name":"","counterparty":"Rea","direction":"\(direction)"}
+            """
+            RoutingMockURLProtocol.handler = { _ in
+                (200, try! JSONSerialization.data(withJSONObject: ["choices": [["message": ["content": body]]]]))
+            }
+            let parser = makeOpenRouterParser(store: MockModelPreferenceStore())
+            guard case .debt(let draft) = try await parser.parseEntry("Rea 30k") else {
+                Issue.record("harus debt"); return DebtDraft()
+            }
+            return draft
+        }
+        #expect(try await debtDraft(direction: "owed_to_me").direction == .owedToMe)
+        // Model ragu (none/kosong) → default deterministik iOwe (user tetap edit).
+        #expect(try await debtDraft(direction: "none").direction == .iOwe)
+    }
+
     @Test("RoutingParser: peran teks Apple + peran gambar OpenRouter berjalan independen")
     func mixedEngines() async throws {
         RoutingMockURLProtocol.handler = { _ in
