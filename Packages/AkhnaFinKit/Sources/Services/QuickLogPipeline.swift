@@ -41,6 +41,12 @@ public struct QuickLogPipeline: Sendable {
         return try await withTimeout { try await parser.parse(text) }
     }
 
+    /// Kalimat → transaksi ATAU hutang (PLAN-008), pagar waktu sama.
+    public func parseEntry(from text: String) async throws -> QuickEntry {
+        let parser = self.parser
+        return try await withTimeoutEntry { try await parser.parseEntry(text) }
+    }
+
     /// Foto resi → draft (gambar langsung ke model multimodal, tanpa OCR terpisah).
     public func parseReceiptDraft(fromImage imageData: Data) async throws -> TransactionDraft {
         let parser = self.parser
@@ -54,8 +60,20 @@ public struct QuickLogPipeline: Sendable {
     private func withTimeout(
         _ operation: @escaping @Sendable () async throws -> TransactionDraft
     ) async throws -> TransactionDraft {
+        try await withTimeoutGeneric(operation)
+    }
+
+    private func withTimeoutEntry(
+        _ operation: @escaping @Sendable () async throws -> QuickEntry
+    ) async throws -> QuickEntry {
+        try await withTimeoutGeneric(operation)
+    }
+
+    private func withTimeoutGeneric<Value: Sendable>(
+        _ operation: @escaping @Sendable () async throws -> Value
+    ) async throws -> Value {
         do {
-            return try await withThrowingTaskGroup(of: TransactionDraft.self) { group in
+            return try await withThrowingTaskGroup(of: Value.self) { group in
                 let timeout = self.timeout
                 group.addTask(operation: operation)
                 group.addTask {

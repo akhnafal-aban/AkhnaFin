@@ -1,5 +1,6 @@
 import SwiftUI
 import AkhnaFinCore
+import ServiceInterfaces
 import Persistence
 
 /// Form tambah/edit catatan hutang — pola state-dari-mode `TransactionFormView`.
@@ -7,6 +8,9 @@ struct DebtFormView: View {
     enum Mode {
         case add
         case edit(DebtRecord)
+        /// Draft hasil parsing Text Entry (PLAN-008) — prefilled, tetap
+        /// dikonfirmasi user sebelum tersimpan (pipeline sakral).
+        case confirmDraft(DebtDraft)
     }
 
     @Environment(\.dismiss) private var dismiss
@@ -40,6 +44,13 @@ struct DebtFormView: View {
             _hasDueDate = State(initialValue: record.dueDate != nil)
             _dueDate = State(initialValue: record.dueDate ?? .now)
             _note = State(initialValue: record.note)
+        case .confirmDraft(let draft):
+            _counterparty = State(initialValue: draft.counterparty)
+            _direction = State(initialValue: draft.direction)
+            _principal = State(initialValue: draft.amount)
+            _hasDueDate = State(initialValue: false)
+            _dueDate = State(initialValue: .now)
+            _note = State(initialValue: draft.note)
         }
     }
 
@@ -95,7 +106,11 @@ struct DebtFormView: View {
     }
 
     private var title: String {
-        if case .edit = mode { "Edit Hutang" } else { "Hutang Baru" }
+        switch mode {
+        case .edit: "Edit Hutang"
+        case .add: "Hutang Baru"
+        case .confirmDraft: "Konfirmasi Hutang"
+        }
     }
 
     private var trimmedCounterparty: String {
@@ -105,7 +120,7 @@ struct DebtFormView: View {
     private func save() {
         do {
             switch mode {
-            case .add:
+            case .add, .confirmDraft:
                 try repository.create(
                     counterparty: trimmedCounterparty,
                     direction: direction,

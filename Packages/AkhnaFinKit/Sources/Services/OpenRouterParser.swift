@@ -71,12 +71,24 @@ public struct OpenRouterParser: TransactionParsing {
     // MARK: - TransactionParsing
 
     public func parse(_ text: String) async throws -> TransactionDraft {
+        // Jalur lama (intent Siri, batch): hasil hutang pun dipaksa jadi draft
+        // transaksi agar tak ada jalur commit tanpa konfirmasi bentuk baru.
         let interval = parserSignposter.beginInterval("parse")
         defer { parserSignposter.endInterval("parse", interval) }
-        // Personalisasi bisa disuntik SEBELUM call: teks mentah sudah berisi
-        // kandidat merchant/keyword.
         let snippet = await personalization?.contextSnippet(for: text) ?? ""
-        return try await complete(parts: [.text(text)], hint: .sentence, personalizationSnippet: snippet, rawInput: text, imageRole: false)
+        let generated = try await complete(parts: [.text(text)], hint: .sentence, personalizationSnippet: snippet, imageRole: false)
+        return generated.draft(rawInput: text)
+    }
+
+    /// PLAN-008: kalimat bisa menghasilkan transaksi ATAU catatan hutang.
+    public func parseEntry(_ text: String) async throws -> QuickEntry {
+        let interval = parserSignposter.beginInterval("parse")
+        defer { parserSignposter.endInterval("parse", interval) }
+        let snippet = await personalization?.contextSnippet(for: text) ?? ""
+        let generated = try await complete(parts: [.text(text)], hint: .sentence, personalizationSnippet: snippet, imageRole: false)
+        return generated.isDebt
+            ? .debt(generated.debtDraft(rawInput: text))
+            : .transaction(generated.draft(rawInput: text))
     }
 
     public func parseBatch(_ text: String) async throws -> [TransactionDraft] {
@@ -92,7 +104,8 @@ public struct OpenRouterParser: TransactionParsing {
         defer { parserSignposter.endInterval("parse", interval) }
         // Tanpa personalisasi pre-call: merchant resi belum diketahui sebelum
         // model membaca gambar di call yang sama (trade-off single-stage).
-        return try await complete(parts: [.image(image)], hint: .receipt, personalizationSnippet: "", rawInput: "", imageRole: true)
+        let generated = try await complete(parts: [.image(image)], hint: .receipt, personalizationSnippet: "", imageRole: true)
+        return generated.draft(rawInput: "")
     }
 
     // MARK: - Satu call: persepsi + kategorisasi
@@ -108,11 +121,64 @@ public struct OpenRouterParser: TransactionParsing {
         let categoryName: String
         let subcategoryName: String
 
+        let recordKind: String
+        let counterparty: String
+        let direction: String
+
         enum CodingKeys: String, CodingKey {
-            case amount, type, merchant, note
+            case amount, type, merchant, note, counterparty, direction
             case daysAgo = "days_ago"
             case categoryName = "category_name"
             case subcategoryName = "subcategory_name"
+            case recordKind = "record_kind"
+        }
+
+        /// Field hutang opsional saat decode (model non-structured bisa
+        /// melewatkannya) — default aman: transaksi.
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            amount = try container.decode(Double.self, forKey: .amount)
+            type = try container.decode(String.self, forKey: .type)
+            daysAgo = try container.decodeIfPresent(Int.self, forKey: .daysAgo) ?? 0
+            merchant = try container.decodeIfPresent(String.self, forKey: .merchant) ?? ""
+            note = try container.decodeIfPresent(String.self, forKey: .note) ?? ""
+            categoryName = try container.decodeIfPresent(String.self, forKey: .categoryName) ?? ""
+            subcategoryName = try container.decodeIfPresent(String.self, forKey: .subcategoryName) ?? ""
+            recordKind = try container.decodeIfPresent(String.self, forKey: .recordKind) ?? "transaction"
+            counterparty = try container.decodeIfPresent(String.self, forKey: .counterparty) ?? ""
+            direction = try container.decodeIfPresent(String.self, forKey: .direction) ?? "none"
+        }
+
+        init(
+            amount: Double, type: String, daysAgo: Int,
+            merchant: String, note: String, categoryName: String, subcategoryName: String,
+            recordKind: String = "transaction", counterparty: String = "", direction: String = "none"
+        ) {
+            self.amount = amount
+            self.type = type
+            self.daysAgo = daysAgo
+            self.merchant = merchant
+            self.note = note
+            self.categoryName = categoryName
+            self.subcategoryName = subcategoryName
+            self.recordKind = recordKind
+            self.counterparty = counterparty
+            self.direction = direction
+        }
+
+        /// Hutang valid = record_kind debt + counterparty terisi.
+        var isDebt: Bool {
+            recordKind == "debt" && !counterparty.trimmingCharacters(in: .whitespaces).isEmpty
+        }
+
+        func debtDraft(rawInput: String) -> DebtDraft {
+            DebtDraft(
+                counterparty: counterparty,
+                direction: direction == "owed_to_me" ? .owedToMe : .iOwe,
+                amount: sanitizedRupiah(amount),
+                note: note,
+                rawInput: rawInput
+            )
         }
 
         /// Mapping murni (tanpa network) ke draft — unit-testable.
@@ -133,23 +199,65 @@ public struct OpenRouterParser: TransactionParsing {
     }
 
     private static let schema = """
-    {"type":"object","properties":{"amount":{"type":"number","description":"Transaction amount in full rupiah. k=thousand (20k=20000), m/jt=million. For receipts: the FINAL GRAND TOTAL paid."},"type":{"type":"string","enum":["expense","income","transfer"]},"days_ago":{"type":"integer","description":"today=0, yesterday/kemarin=1, two days ago/kemarin lusa=2"},"merchant":{"type":"string","description":"Store/seller/place name; empty if unknown"},"note":{"type":"string","description":"Short summary of items/services bought"},"category_name":{"type":"string","description":"Best-matching MAIN category name from the provided list; empty if unsure"},"subcategory_name":{"type":"string","description":"Matching subcategory from the provided list; empty otherwise"}},"required":["amount","type","days_ago","merchant","note","category_name","subcategory_name"],"additionalProperties":false}
+    {"type":"object","properties":{"record_kind":{"type":"string","enum":["transaction","debt"],"description":"debt ONLY when the sentence is about lending/borrowing money (utang, piutang, pinjam, paylater bill); otherwise transaction"},"amount":{"type":"number","description":"Amount in full rupiah. k=thousand (20k=20000), m/jt=million. For receipts: the FINAL GRAND TOTAL paid."},"type":{"type":"string","enum":["expense","income","transfer"]},"days_ago":{"type":"integer","description":"today=0, yesterday/kemarin=1, two days ago/kemarin lusa=2"},"merchant":{"type":"string","description":"Store/seller/place name; empty if unknown"},"note":{"type":"string","description":"Short summary"},"category_name":{"type":"string","description":"Best-matching MAIN category name from the provided list; empty if unsure"},"subcategory_name":{"type":"string","description":"Matching subcategory from the provided list; empty otherwise"},"counterparty":{"type":"string","description":"For debt: person or platform name (Budi, SPayLater); empty for transaction"},"direction":{"type":"string","enum":["i_owe","owed_to_me","none"],"description":"For debt: i_owe = the user borrowed/owes money; owed_to_me = someone owes the user; none for transaction"}},"required":["record_kind","amount","type","days_ago","merchant","note","category_name","subcategory_name","counterparty","direction"],"additionalProperties":false}
     """
 
     private func complete(
         parts: [ORContentPart],
         hint: InputHint,
         personalizationSnippet: String,
-        rawInput: String,
         imageRole: Bool
-    ) async throws -> TransactionDraft {
+    ) async throws -> GeneratedTransaction {
         let config = engineConfig(imageRole: imageRole)
+
+        // Tangga fallback utk 404 "No endpoints found" (kombinasi parameter tak
+        // punya endpoint — tergantung model yang user pilih): full → tanpa
+        // reasoning → tanpa structured. Deterministik & ter-log; error lain
+        // langsung dilempar.
+        var attempts: [(structured: Bool, effort: String?)] = [(config.structured, "low")]
+        if config.structured {
+            attempts.append((true, nil))
+        }
+        attempts.append((false, nil))
+
+        var lastError: Error = TransactionParsingError.parsingFailed("Gagal memproses.")
+        for (index, attempt) in attempts.enumerated() {
+            do {
+                return try await runAttempt(
+                    parts: parts, hint: hint,
+                    personalizationSnippet: personalizationSnippet,
+                    slug: config.slug, structured: attempt.structured,
+                    reasoningEffort: attempt.effort
+                )
+            } catch OpenRouterRequestError.noEndpoints {
+                parserLog.warning("no-endpoints attempt \(index + 1)/\(attempts.count) (structured=\(attempt.structured)) — coba varian lebih longgar")
+                lastError = TransactionParsingError.parsingFailed(
+                    "Model ini tidak kompatibel dengan permintaan app. Pilih model lain di Pengaturan → Model AI."
+                )
+            } catch {
+                throw error
+            }
+        }
+        throw lastError
+    }
+
+    private func runAttempt(
+        parts: [ORContentPart],
+        hint: InputHint,
+        personalizationSnippet: String,
+        slug: String,
+        structured: Bool,
+        reasoningEffort: String?
+    ) async throws -> GeneratedTransaction {
         var instruction = switch hint {
         case .sentence:
             """
             You are a personal-finance parser. Convert the user's sentence (Indonesian \
-            or English) into a structured transaction. Amount rules: k=×1000, jt/m=×1000000; \
+            or English) into a structured record. Amount rules: k=×1000, jt/m=×1000000; \
             never round or add zeros.
+            record_kind is "debt" ONLY for lending/borrowing sentences (utang, piutang, \
+            pinjam, paylater bills): "utang ke Budi 50k" → debt, i_owe, counterparty Budi; \
+            "Budi pinjam 100k" → debt, owed_to_me. Regular purchases/income → transaction.
             """
         case .receipt:
             """
@@ -169,35 +277,36 @@ public struct OpenRouterParser: TransactionParsing {
         if !personalizationSnippet.isEmpty {
             instruction += "\n\nUser's known category habits (strong hints, follow when relevant):\n\(personalizationSnippet)"
         }
-        // Model tanpa structured outputs (pilihan bebas user, mis. Nemotron):
-        // minta JSON via prompt lalu ekstrak toleran — mesin yang sama dgn
-        // workaround 2-stage dulu.
-        if !config.structured {
+        // Model/attempt tanpa structured outputs: minta JSON via prompt lalu
+        // ekstrak toleran — mesin yang sama dgn workaround 2-stage dulu.
+        if !structured {
             instruction += """
 
 
             Return ONLY a single JSON object, no markdown fences, no commentary:
-            {"amount": number (full rupiah), "type": "expense"|"income"|"transfer", \
-            "days_ago": integer, "merchant": string, "note": string, \
-            "category_name": string, "subcategory_name": string}
+            {"record_kind": "transaction"|"debt", "amount": number (full rupiah), \
+            "type": "expense"|"income"|"transfer", "days_ago": integer, \
+            "merchant": string, "note": string, "category_name": string, \
+            "subcategory_name": string, "counterparty": string, \
+            "direction": "i_owe"|"owed_to_me"|"none"}
             """
         }
 
         let clock = ContinuousClock()
         let start = clock.now
         let data = try await client.completeStructured(
-            model: config.slug,
+            model: slug,
             messages: [.system(instruction), .user(parts)],
             schemaName: "generated_transaction",
             schemaJSON: Self.schema,
-            structured: config.structured
+            structured: structured,
+            reasoningEffort: reasoningEffort
         )
-        parserLog.info("call \(config.slug, privacy: .public) selesai dalam \(clock.now - start, privacy: .public)")
+        parserLog.info("call \(slug, privacy: .public) selesai dalam \(clock.now - start, privacy: .public)")
 
-        let jsonData = config.structured ? data : (Self.extractJSONObject(from: data) ?? data)
+        let jsonData = structured ? data : (Self.extractJSONObject(from: data) ?? data)
         do {
-            let generated = try JSONDecoder().decode(GeneratedTransaction.self, from: jsonData)
-            return generated.draft(rawInput: rawInput)
+            return try JSONDecoder().decode(GeneratedTransaction.self, from: jsonData)
         } catch {
             parserLog.error("decode gagal: \(String(describing: error), privacy: .public)")
             throw TransactionParsingError.parsingFailed(

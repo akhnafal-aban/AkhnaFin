@@ -25,7 +25,8 @@ struct RootView: View {
                     repository: dependencies.repository,
                     parser: dependencies.parser,
                     locationService: dependencies.locationService,
-                    signalRepository: dependencies.signalRepository
+                    signalRepository: dependencies.signalRepository,
+                    debtRepository: dependencies.debtRepository
                 )
             }
             Tab("Pengaturan", systemImage: "gearshape") {

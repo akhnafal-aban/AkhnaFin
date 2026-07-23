@@ -52,8 +52,8 @@ struct AkhnaFinShortcuts: AppShortcutsProvider {
                 "Catat pengeluaran di \(.applicationName)",
                 "Log expense in \(.applicationName)"
             ],
-            shortTitle: "Catat Pengeluaran",
-            systemImageName: "wand.and.stars"
+            shortTitle: "Text Entry",
+            systemImageName: "text.viewfinder"
         )
         AppShortcut(
             intent: LogReceiptIntent(),
@@ -61,7 +61,7 @@ struct AkhnaFinShortcuts: AppShortcutsProvider {
                 "Catat resi di \(.applicationName)",
                 "Log receipt in \(.applicationName)"
             ],
-            shortTitle: "Catat Resi",
+            shortTitle: "Scan Receipt",
             systemImageName: "doc.viewfinder"
         )
     }

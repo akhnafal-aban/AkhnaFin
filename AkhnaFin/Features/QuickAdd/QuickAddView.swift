@@ -13,11 +13,14 @@ struct QuickAddView: View {
     private let repository: TransactionRepository
     private let locationService: (any LocationCapturing)?
     private let signalRepository: SignalRepository?
+    /// PLAN-008: kalimat bisa menghasilkan catatan hutang — butuh repo hutang.
+    private let debtRepository: DebtRepository?
 
     @Environment(\.dismiss) private var dismiss
     @State private var input = ""
     @State private var isParsing = false
     @State private var pending: PendingDraft?
+    @State private var pendingDebt: PendingDebtDraft?
     @State private var errorMessage: String?
     @FocusState private var inputFocused: Bool
 
@@ -25,12 +28,14 @@ struct QuickAddView: View {
         parser: any TransactionParsing,
         repository: TransactionRepository,
         locationService: (any LocationCapturing)? = nil,
-        signalRepository: SignalRepository? = nil
+        signalRepository: SignalRepository? = nil,
+        debtRepository: DebtRepository? = nil
     ) {
         self.parser = parser
         self.repository = repository
         self.locationService = locationService
         self.signalRepository = signalRepository
+        self.debtRepository = debtRepository
     }
 
     var body: some View {
@@ -108,6 +113,13 @@ struct QuickAddView: View {
                 inputFocused = true
             }
         }
+        .sheet(item: $pendingDebt) { pending in
+            if let debtRepository {
+                NavigationStack {
+                    DebtFormView(mode: .confirmDraft(pending.draft), repository: debtRepository)
+                }
+            }
+        }
     }
 
     private var trimmedInput: String {
@@ -123,8 +135,19 @@ struct QuickAddView: View {
         Task {
             do {
                 // Pipeline yang sama dgn App Intent: pagar waktu + error granular.
-                let draft = try await pipeline.parseDraft(from: text)
-                pending = PendingDraft(draft: draft)
+                // PLAN-008: hasil bisa transaksi ATAU hutang (bila repo hutang ada).
+                if debtRepository != nil {
+                    switch try await pipeline.parseEntry(from: text) {
+                    case .transaction(let draft):
+                        pending = PendingDraft(draft: draft)
+                    case .debt(let draft):
+                        pendingDebt = PendingDebtDraft(draft: draft)
+                        input = ""
+                    }
+                } else {
+                    let draft = try await pipeline.parseDraft(from: text)
+                    pending = PendingDraft(draft: draft)
+                }
             } catch {
                 errorMessage = (error as? LocalizedError)?.errorDescription
                     ?? "Gagal memproses kalimat. Coba lagi."
@@ -138,6 +161,11 @@ struct QuickAddView: View {
 private struct PendingDraft: Identifiable {
     let id = UUID()
     let draft: TransactionDraft
+}
+
+private struct PendingDebtDraft: Identifiable {
+    let id = UUID()
+    let draft: DebtDraft
 }
 
 #Preview {

@@ -17,7 +17,7 @@ import Services
 private let intentLog = Logger(subsystem: "com.aban.AkhnaFin", category: "Intent")
 
 struct LogReceiptIntent: AppIntent {
-    static let title: LocalizedStringResource = "Catat Resi"
+    static let title: LocalizedStringResource = "Scan Receipt"
     static let description = IntentDescription(
         "Analisis screenshot resi lalu catat transaksinya. Sambungkan dengan aksi \"Take Screenshot\" di Shortcuts."
     )

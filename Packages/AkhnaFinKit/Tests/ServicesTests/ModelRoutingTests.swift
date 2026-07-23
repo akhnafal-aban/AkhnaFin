@@ -119,6 +119,93 @@ struct ModelRoutingTests {
         #expect(draft.amount == 20000)
     }
 
+    @Test("404 no-endpoints → tangga fallback: structured+reasoning → tanpa reasoning → non-structured")
+    func noEndpointsFallbackLadder() async throws {
+        nonisolated(unsafe) var bodies: [[String: Any]] = []
+        RoutingMockURLProtocol.handler = { request in
+            let body = try! JSONSerialization.jsonObject(with: request.httpBody ?? Data()) as! [String: Any]
+            bodies.append(body)
+            // Dua percobaan pertama ditolak "No endpoints found"; ketiga sukses
+            // (content dgn fences — jalur non-structured harus tetap decode).
+            if bodies.count < 3 {
+                return (404, Data(#"{"error":{"message":"No endpoints found that can handle the requested parameters."}}"#.utf8))
+            }
+            let fenced = "```json\n\(self.result)\n```"
+            let json = ["choices": [["message": ["content": fenced]]]]
+            return (200, try! JSONSerialization.data(withJSONObject: json))
+        }
+        let parser = makeOpenRouterParser(store: MockModelPreferenceStore())
+        let draft = try await parser.parse("beli bakso 20k")
+        #expect(draft.amount == 20000)
+        #expect(bodies.count == 3)
+        // Attempt 1: structured + reasoning low
+        #expect(bodies[0]["response_format"] != nil)
+        #expect((bodies[0]["reasoning"] as? [String: String])?["effort"] == "low")
+        // Attempt 2: structured tanpa reasoning
+        #expect(bodies[1]["response_format"] != nil)
+        #expect(bodies[1]["reasoning"] == nil)
+        // Attempt 3: non-structured tanpa reasoning
+        #expect(bodies[2]["response_format"] == nil)
+        #expect(bodies[2]["reasoning"] == nil)
+    }
+
+    @Test("Semua attempt no-endpoints → pesan arahkan ganti model di Pengaturan")
+    func noEndpointsAllFail() async {
+        RoutingMockURLProtocol.handler = { _ in
+            (404, Data(#"{"error":{"message":"No endpoints found that can handle the requested parameters."}}"#.utf8))
+        }
+        let parser = makeOpenRouterParser(store: MockModelPreferenceStore())
+        do {
+            _ = try await parser.parse("x")
+            Issue.record("harus melempar")
+        } catch let error as TransactionParsingError {
+            #expect(error.errorDescription?.contains("Model AI") == true)
+        } catch { Issue.record("tipe error salah") }
+    }
+
+    @Test("parseEntry: kalimat utang → DebtDraft; kalimat belanja → TransactionDraft")
+    func parseEntryDebtVsTransaction() async throws {
+        let debtResult = """
+        {"record_kind":"debt","amount":50000,"type":"expense","days_ago":0,"merchant":"","note":"pinjam uang","category_name":"","subcategory_name":"","counterparty":"Budi","direction":"i_owe"}
+        """
+        RoutingMockURLProtocol.handler = { _ in
+            let json = ["choices": [["message": ["content": debtResult]]]]
+            return (200, try! JSONSerialization.data(withJSONObject: json))
+        }
+        let parser = makeOpenRouterParser(store: MockModelPreferenceStore())
+        guard case .debt(let draft) = try await parser.parseEntry("utang ke Budi 50k") else {
+            Issue.record("harus debt"); return
+        }
+        #expect(draft.counterparty == "Budi")
+        #expect(draft.direction == .iOwe)
+        #expect(draft.amount == 50000)
+        #expect(draft.rawInput == "utang ke Budi 50k")
+
+        RoutingMockURLProtocol.handler = { _ in
+            let json = ["choices": [["message": ["content": self.result]]]]
+            return (200, try! JSONSerialization.data(withJSONObject: json))
+        }
+        guard case .transaction(let tx) = try await parser.parseEntry("beli bakso 20k") else {
+            Issue.record("harus transaksi"); return
+        }
+        #expect(tx.amount == 20000)
+    }
+
+    @Test("record_kind debt TANPA counterparty → jatuh ke transaksi (guard isDebt)")
+    func debtWithoutCounterpartyFallsBack() async throws {
+        let odd = """
+        {"record_kind":"debt","amount":50000,"type":"expense","days_ago":0,"merchant":"","note":"","category_name":"","subcategory_name":"","counterparty":"  ","direction":"i_owe"}
+        """
+        RoutingMockURLProtocol.handler = { _ in
+            let json = ["choices": [["message": ["content": odd]]]]
+            return (200, try! JSONSerialization.data(withJSONObject: json))
+        }
+        let parser = makeOpenRouterParser(store: MockModelPreferenceStore())
+        guard case .transaction = try await parser.parseEntry("x") else {
+            Issue.record("harus jatuh ke transaksi"); return
+        }
+    }
+
     @Test("RoutingParser: peran teks Apple + peran gambar OpenRouter berjalan independen")
     func mixedEngines() async throws {
         RoutingMockURLProtocol.handler = { _ in
