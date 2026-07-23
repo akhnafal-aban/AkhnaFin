@@ -337,12 +337,58 @@ public struct OpenRouterParser: TransactionParsing {
             parserLog.info("decode sukses via unwrap string ganda")
             return generated
         }
+        // Fallback terakhir: sebagian model (mis. gpt-oss-20b:free) MENGABAIKAN
+        // response_format dan membalas key-value/YAML alih-alih JSON. Isinya
+        // lengkap — parse baris "key: value" dgn peta alias.
+        if let generated = Self.parseLooseKeyValue(from: data) {
+            parserLog.info("decode sukses via key-value fallback (model tak keluarkan JSON)")
+            return generated
+        }
         // Diagnostik: tampilkan isi mentah (terpotong) — tanpa ini kegagalan
         // berikutnya tak bisa didiagnosis dari log.
         let preview = String(data: data.prefix(300), encoding: .utf8) ?? "<non-utf8>"
         parserLog.error("decode gagal (\(data.count) bytes, structured=\(structured)): \(preview, privacy: .public)")
         throw TransactionParsingError.parsingFailed(
             "Gagal memahami input itu. Coba tulis ulang lebih jelas."
+        )
+    }
+
+    /// Parse respons key-value/YAML ("amount: 10000\nrecord_kind: debt") saat
+    /// model mengabaikan JSON. Peta alias menangani variasi nama field antar
+    /// model (owner→direction, keterangan→note, category→category_name).
+    static func parseLooseKeyValue(from data: Data) -> GeneratedTransaction? {
+        guard let text = String(data: data, encoding: .utf8) else { return nil }
+        var fields: [String: String] = [:]
+        for rawLine in text.split(whereSeparator: \.isNewline) {
+            let line = String(rawLine)
+            guard let colon = line.firstIndex(of: ":") else { continue }
+            let key = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
+            var value = String(line[line.index(after: colon)...]).trimmingCharacters(in: .whitespaces)
+            if value.count >= 2, value.hasPrefix("\""), value.hasSuffix("\"") {
+                value = String(value.dropFirst().dropLast())
+            }
+            if !key.isEmpty { fields[key] = value }
+        }
+        func value(_ aliases: [String]) -> String {
+            for alias in aliases { if let v = fields[alias] { return v } }
+            return ""
+        }
+        let amountDigits = value(["amount", "nominal", "jumlah"]).filter(\.isNumber)
+        // Butuh minimal nominal + sinyal ini memang record (bukan teks acak).
+        guard let amount = Double(amountDigits), amount > 0 else { return nil }
+
+        let daysDigits = value(["days_ago", "daysago", "hari_lalu"]).filter(\.isNumber)
+        return GeneratedTransaction(
+            amount: amount,
+            type: value(["type", "jenis"]).isEmpty ? "expense" : value(["type", "jenis"]),
+            daysAgo: Int(daysDigits) ?? 0,
+            merchant: value(["merchant", "toko", "tempat"]),
+            note: value(["note", "keterangan", "catatan", "description", "desc"]),
+            categoryName: value(["category_name", "category", "kategori"]),
+            subcategoryName: value(["subcategory_name", "subcategory", "subkategori"]),
+            recordKind: value(["record_kind", "kind", "jenis_catatan"]).isEmpty ? "transaction" : value(["record_kind", "kind", "jenis_catatan"]),
+            counterparty: value(["counterparty", "pihak", "nama", "kepada"]),
+            direction: value(["direction", "owner", "arah"]).isEmpty ? "none" : value(["direction", "owner", "arah"])
         )
     }
 
