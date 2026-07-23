@@ -191,6 +191,21 @@ struct ModelRoutingTests {
         #expect(tx.amount == 20000)
     }
 
+    @Test("Structured tapi content bocor teks di sekitar JSON (gpt-oss harmony) → tetap ter-decode")
+    func structuredWithLeakedText() async throws {
+        // Reproduksi pola live user: JSON valid + baris nyasar setelahnya
+        // ("Unexpected character 'd' around line 6").
+        let leaked = "{\n\"amount\":20000,\n\"type\":\"expense\",\n\"days_ago\":0,\n\"merchant\":\"\",\n\"note\":\"bakso\",\n\"category_name\":\"\",\n\"subcategory_name\":\"\",\n\"record_kind\":\"transaction\",\n\"counterparty\":\"\",\n\"direction\":\"none\"\n}\ndone"
+        RoutingMockURLProtocol.handler = { _ in
+            let json = ["choices": [["message": ["content": leaked]]]]
+            return (200, try! JSONSerialization.data(withJSONObject: json))
+        }
+        let parser = makeOpenRouterParser(store: MockModelPreferenceStore())
+        let draft = try await parser.parse("beli bakso 20k")
+        #expect(draft.amount == 20000)
+        #expect(draft.note == "bakso")
+    }
+
     @Test("record_kind debt TANPA counterparty → jatuh ke transaksi (guard isDebt)")
     func debtWithoutCounterpartyFallsBack() async throws {
         let odd = """
