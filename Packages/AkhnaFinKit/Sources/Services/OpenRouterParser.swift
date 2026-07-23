@@ -25,19 +25,38 @@ public struct OpenRouterParser: TransactionParsing {
     private let categoryNames: [String]
     private let subcategoryNames: [String]
     private let personalization: (any PersonalizationProviding)?
+    /// Slug + kemampuan structured dibaca SAAT CALL dari preferensi user
+    /// (PLAN-007) — ganti model di Pengaturan langsung berlaku.
+    private let preferenceStore: any ModelPreferenceStoring
 
     public init(
         client: OpenRouterClient,
         keyStore: any APIKeyStoring,
         categoryNames: [String],
         subcategoryNames: [String],
-        personalization: (any PersonalizationProviding)? = nil
+        personalization: (any PersonalizationProviding)? = nil,
+        preferenceStore: any ModelPreferenceStoring = MockModelPreferenceStore()
     ) {
         self.client = client
         self.keyStore = keyStore
         self.categoryNames = categoryNames
         self.subcategoryNames = subcategoryNames
         self.personalization = personalization
+        self.preferenceStore = preferenceStore
+    }
+
+    /// Slug + flag structured untuk peran; bila preferensi peran itu bukan
+    /// OpenRouter (RoutingParser salah kirim / default), pakai standar.
+    private func engineConfig(imageRole: Bool) -> (slug: String, structured: Bool) {
+        let preference = preferenceStore.load()
+        let engine = imageRole ? preference.image : preference.text
+        if case .openRouter(let slug, let structured, _) = engine {
+            return (slug, structured)
+        }
+        if case .openRouter(let slug, let structured, _) = (imageRole ? ModelPreference.standard.image : ModelPreference.standard.text) {
+            return (slug, structured)
+        }
+        return (OpenRouterModel.model, true)
     }
 
     public var availability: ParsingAvailability {
@@ -57,7 +76,7 @@ public struct OpenRouterParser: TransactionParsing {
         // Personalisasi bisa disuntik SEBELUM call: teks mentah sudah berisi
         // kandidat merchant/keyword.
         let snippet = await personalization?.contextSnippet(for: text) ?? ""
-        return try await complete(parts: [.text(text)], hint: .sentence, personalizationSnippet: snippet, rawInput: text)
+        return try await complete(parts: [.text(text)], hint: .sentence, personalizationSnippet: snippet, rawInput: text, imageRole: false)
     }
 
     public func parseBatch(_ text: String) async throws -> [TransactionDraft] {
@@ -73,7 +92,7 @@ public struct OpenRouterParser: TransactionParsing {
         defer { parserSignposter.endInterval("parse", interval) }
         // Tanpa personalisasi pre-call: merchant resi belum diketahui sebelum
         // model membaca gambar di call yang sama (trade-off single-stage).
-        return try await complete(parts: [.image(image)], hint: .receipt, personalizationSnippet: "", rawInput: "")
+        return try await complete(parts: [.image(image)], hint: .receipt, personalizationSnippet: "", rawInput: "", imageRole: true)
     }
 
     // MARK: - Satu call: persepsi + kategorisasi
@@ -121,8 +140,10 @@ public struct OpenRouterParser: TransactionParsing {
         parts: [ORContentPart],
         hint: InputHint,
         personalizationSnippet: String,
-        rawInput: String
+        rawInput: String,
+        imageRole: Bool
     ) async throws -> TransactionDraft {
+        let config = engineConfig(imageRole: imageRole)
         var instruction = switch hint {
         case .sentence:
             """
@@ -148,19 +169,34 @@ public struct OpenRouterParser: TransactionParsing {
         if !personalizationSnippet.isEmpty {
             instruction += "\n\nUser's known category habits (strong hints, follow when relevant):\n\(personalizationSnippet)"
         }
+        // Model tanpa structured outputs (pilihan bebas user, mis. Nemotron):
+        // minta JSON via prompt lalu ekstrak toleran — mesin yang sama dgn
+        // workaround 2-stage dulu.
+        if !config.structured {
+            instruction += """
+
+
+            Return ONLY a single JSON object, no markdown fences, no commentary:
+            {"amount": number (full rupiah), "type": "expense"|"income"|"transfer", \
+            "days_ago": integer, "merchant": string, "note": string, \
+            "category_name": string, "subcategory_name": string}
+            """
+        }
 
         let clock = ContinuousClock()
         let start = clock.now
         let data = try await client.completeStructured(
-            model: OpenRouterModel.model,
+            model: config.slug,
             messages: [.system(instruction), .user(parts)],
             schemaName: "generated_transaction",
-            schemaJSON: Self.schema
+            schemaJSON: Self.schema,
+            structured: config.structured
         )
-        parserLog.info("call selesai dalam \(clock.now - start, privacy: .public)")
+        parserLog.info("call \(config.slug, privacy: .public) selesai dalam \(clock.now - start, privacy: .public)")
 
+        let jsonData = config.structured ? data : (Self.extractJSONObject(from: data) ?? data)
         do {
-            let generated = try JSONDecoder().decode(GeneratedTransaction.self, from: data)
+            let generated = try JSONDecoder().decode(GeneratedTransaction.self, from: jsonData)
             return generated.draft(rawInput: rawInput)
         } catch {
             parserLog.error("decode gagal: \(String(describing: error), privacy: .public)")
@@ -168,6 +204,38 @@ public struct OpenRouterParser: TransactionParsing {
                 "Gagal memahami input itu. Coba tulis ulang lebih jelas."
             )
         }
+    }
+
+    /// Ekstrak objek JSON pertama yang seimbang dari respons non-structured
+    /// (model bisa membungkus dgn fences/prosa). Hormati string literal & escape.
+    static func extractJSONObject(from data: Data) -> Data? {
+        guard let text = String(data: data, encoding: .utf8),
+              let start = text.firstIndex(of: "{") else { return nil }
+        var depth = 0
+        var inString = false
+        var escaped = false
+        var index = start
+        while index < text.endIndex {
+            let char = text[index]
+            if inString {
+                if escaped { escaped = false }
+                else if char == "\\" { escaped = true }
+                else if char == "\"" { inString = false }
+            } else {
+                switch char {
+                case "\"": inString = true
+                case "{": depth += 1
+                case "}":
+                    depth -= 1
+                    if depth == 0 {
+                        return String(text[start...index]).data(using: .utf8)
+                    }
+                default: break
+                }
+            }
+            index = text.index(after: index)
+        }
+        return nil
     }
 
     // MARK: - Glossary kategori (port dari parser lama — BUG-1a)
