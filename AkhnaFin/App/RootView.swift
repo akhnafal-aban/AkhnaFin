@@ -29,7 +29,12 @@ struct RootView: View {
                 )
             }
             Tab("Pengaturan", systemImage: "gearshape") {
-                SettingsView(repository: dependencies.repository, keyStore: dependencies.keyStore)
+                SettingsView(
+                    repository: dependencies.repository,
+                    keyStore: dependencies.keyStore,
+                    modelPreferenceStore: dependencies.modelPreferenceStore,
+                    modelCatalog: dependencies.modelCatalog
+                )
             }
         }
         // Jalur "Edit di App" dari snippet intent (A3): konsumsi draft handoff

@@ -18,6 +18,8 @@ final class AppDependencies {
     let debtRepository: DebtRepository
     let signalRepository: SignalRepository
     let keyStore: any APIKeyStoring
+    let modelPreferenceStore: any ModelPreferenceStoring
+    let modelCatalog: OpenRouterModelCatalog
     let parser: any TransactionParsing
     let locationService: any LocationCapturing = CoreLocationService()
 
@@ -29,16 +31,32 @@ final class AppDependencies {
 
         let keyStore = OpenRouterKeyStore()
         self.keyStore = keyStore
+        let preferenceStore = ModelPreferenceStore()
+        modelPreferenceStore = preferenceStore
+        modelCatalog = OpenRouterModelCatalog()
 
         // Nama kategori user disuntikkan ke instruksi generator agar saran nyambung;
         // personalisasi = knowledge-graph mini CategorySignal (PLAN-006).
+        // PLAN-007: routing per-peran — engine dibaca saat call dari preferensi.
         let categories = (try? context.fetch(FetchDescriptor<TransactionCategory>())) ?? []
-        parser = OpenRouterParser(
-            client: OpenRouterClient(keyStore: keyStore),
-            keyStore: keyStore,
-            categoryNames: categories.filter { $0.parent == nil }.map(\.name),
-            subcategoryNames: categories.filter { $0.parent != nil }.map(\.name),
-            personalization: SignalPersonalization(repository: signalRepository)
+        let categoryNames = categories.filter { $0.parent == nil }.map(\.name)
+        let subcategoryNames = categories.filter { $0.parent != nil }.map(\.name)
+        let personalization = SignalPersonalization(repository: signalRepository)
+        parser = RoutingTransactionParser(
+            apple: AppleTransactionParser(
+                categoryNames: categoryNames,
+                subcategoryNames: subcategoryNames,
+                personalization: personalization
+            ),
+            openRouter: OpenRouterParser(
+                client: OpenRouterClient(keyStore: keyStore),
+                keyStore: keyStore,
+                categoryNames: categoryNames,
+                subcategoryNames: subcategoryNames,
+                personalization: personalization,
+                preferenceStore: preferenceStore
+            ),
+            preferenceStore: preferenceStore
         )
     }
 }
