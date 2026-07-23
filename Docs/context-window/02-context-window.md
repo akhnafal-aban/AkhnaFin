@@ -1,12 +1,15 @@
 # Context Window — Sesi 02
 
-- **Tanggal:** 2026-07-19
-- **Ringkasan:** Review + refactor Intents (dedup, snippet ramping, 3 fix
-  correctness) → Fase C: dashboard Swift Charts + restrukturisasi jalur capture
-  (tab Catat Cepat dihapus → menu "+" HIG pull-down + Upload Resi in-app baru)
-  → PLAN-005 hutang/piutang (ledger terpisah, cicilan, kartu Dashboard) + fix
-  crash Charts. 63 unit test hijau; verifikasi visual simulator lulus.
-- **Commit range:** `904fc0d` (refactor intents) → `9af85c1` (fix donut) + docs.
+- **Tanggal:** 2026-07-19 → 2026-07-23 (sesi panjang, berlanjut lintas hari)
+- **Ringkasan:** Review + refactor Intents → Fase C dashboard+capture menu →
+  PLAN-005 hutang/piutang → **PLAN-006 pivot AI penuh ke OpenRouter** (2-stage
+  lalu disederhanakan jadi 1-call) → **PLAN-007 user bisa pilih model AI
+  sendiri per peran** (Apple lokal vs OpenRouter apa pun) → **PLAN-008 fix bug
+  live + Text Entry bisa catat hutang**. Diselingi beberapa fix reaktif atas
+  laporan device user (404 routing, decode gagal 3x varian). 92 unit test
+  hijau; graphify graph diperbarui (1041 node).
+- **Commit range:** `904fc0d` → `1fac01f` (HEAD) + docs. **Branch:
+  `external-model/v1`, BUKAN main — belum di-merge.**
 
 ## Yang selesai sesi ini
 
@@ -35,36 +38,70 @@
 - **Visi user tercatat (belum dibangun):** asset management — depresiasi, asset value, kategori aset. Tunggu permintaan eksplisit.
 - **App Intents snippet — JANGAN `requestConfirmation(snippetIntent:)` untuk snippet dgn tombol aksi-sendiri** (mis. "Edit di App"): `await requestConfirmation` menahan `perform()`, tombol nested yang buka app TAK menutup snippet → nggantung (device-verified). Pakai RESULT snippet (`ShowsSnippetView`, perform selesai seketika) dgn tiap tombol = AppIntent yang commit/handoff/batal sendiri (WWDC25 sesi 275). Fix di `ca7bf0a`.
 
-## PLAN-006 — Pivot AI ke OpenRouter (bagian akhir sesi)
+## PLAN-006 — Pivot AI ke OpenRouter (2-stage → lalu disederhanakan jadi 1-call)
 
-- **Jalur Apple-native DIHAPUS** (FoundationModelsParser, VisionReceiptScanner, ReceiptHeuristics; `parseReceipt(text:)` → `parseReceipt(image:)`; ReceiptScanning mati). AI = `OpenRouterParser` 2-stage: Nemotron omni (`nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`, teks Indonesia/English + foto resi) → `openai/gpt-oss-120b:free` (structured outputs strict + `provider.require_parameters`). Free tier = pilihan sadar user (privasi + rate limit tercatat di PLAN-006). Timeout pipeline 25s.
+- **Jalur Apple-native DIHAPUS total** (FoundationModelsParser, VisionReceiptScanner, ReceiptHeuristics; `parseReceipt(text:)` → `parseReceipt(image:)`; `ReceiptScanning` mati). AI = `OpenRouterParser` 2-stage awal: Nemotron omni (perception) → gpt-oss (generator).
 - **API key**: Keychain via `OpenRouterKeyStore` (`APIKeyStoring`), SecureField di Pengaturan; tak pernah di log/UserDefaults/ditampilkan ulang.
-- **Personalisasi**: `CategorySignal` (@Model, edge berbobot merchant|keyword|bank → kategori) + `SignalRepository` (konfirmasi +1.0, edit +2.5, snippet ≤12 baris relevan ke prompt stage-2). Feedback loop: FormView confirmDraft + SaveDraftIntent merekam tiap commit jalur AI.
-- **Gotcha test baru**: handler statis URLProtocol TIDAK boleh dibagi antar suite (suite jalan paralel → race) — satu subclass URLProtocol per suite.
+- **Personalisasi**: `CategorySignal` (@Model, edge berbobot merchant|keyword|bank → kategori) + `SignalRepository` (konfirmasi +1.0, edit +2.5, snippet ≤12 baris relevan ke prompt). Feedback loop: FormView confirmDraft + SaveDraftIntent merekam tiap commit jalur AI. Tetap dipakai setelah collapse ke 1-call.
+- **Gotcha test**: handler statis URLProtocol TIDAK boleh dibagi antar suite (suite jalan paralel → race) — satu subclass URLProtocol per suite. Berulang tiap file test baru (`RoutingMockURLProtocol`, `ParserMockURLProtocol`, dst).
+- **Data live user memicu 3 putaran fix pasca-Slice awal:**
+  1. 404 "No endpoints found" — Nemotron `:free` TAK dukung `response_format`; `gpt-oss-120b:free` slug **tidak ada** (cuma paid) → ganti `gpt-oss-20b:free`, `structured` jadi parameter opsional di client (`c02abef`).
+  2. Timing terukur 23.2s (16.1+7.1) → `reasoning.effort:"low"` turunkan ke 7.9s (`ff4b2bb`). Instrumentasi timing per-stage ditambah duluan (`6c9383f`) supaya user bisa kasih angka nyata.
+  3. **User minta lebih efisien lagi** → riset model gratis+multimodal via `GET /api/v1/models` (`supported_parameters`, uptime per-provider) → **collapse 2-stage jadi 1 call**, model tunggal `google/gemma-4-26b-a4b-it:free` (MoE, ~3.8B aktif/token, native structured outputs, 2 provider ~99% uptime) — kategori ikut ditebak di call yang sama, dibantu daftar kategori + `CategorySignal` (`b569349`).
 - Bonus pivot: input Indonesia didukung; parser jalan di simulator; FM gotchas lama (unsupportedLanguageOrLocale, ModelManagerError 1026) kini historis.
-- Commit: `f837149` A (transport) → `c8ca853` B (parser+hapus) → `3097e1d` C (signals) → `a7f3032` D (wiring+Settings).
+- Commit inti: `f837149` A (transport) → `c8ca853` B (parser+hapus Apple) → `3097e1d` C (signals) → `a7f3032` D (wiring+Settings) → `c02abef`/`6c9383f`/`ff4b2bb` (3 fix reaktif) → `b569349` (collapse 1-call).
 
-## PLAN-007 — Konfigurasi model per-peran (paling akhir sesi)
+## PLAN-007 — User bebas pilih model AI sendiri per peran (Apple lokal ⇄ OpenRouter)
 
-- Latar: single-call Gemma variance liar (4.6s/10.7s/25.2s-timeout/3s) → user minta kendali penuh.
-- `RoutingTransactionParser`: teks & gambar masing-masing `.appleLocal` atau `.openRouter(slug)`; engine dibaca SAAT CALL dari `ModelPreferenceStore` (UserDefaults). Jalur Apple DIPULIHKAN dari `c8ca853^` (FM + Vision OCR + heuristik) dibungkus `AppleTransactionParser`. Model non-structured → prompt-JSON + `extractJSONObject` (restored). Katalog: `OpenRouterModelCatalog` (GET /models publik). UI: Pengaturan → Model AI (picker per peran + daftar model searchable/filter gratis/badge JSON).
-- Perf berjalan: 2-stage 23.2s → `reasoning.effort:"low"` 7.9s → single-call Gemma ~3-10s (variance provider free).
-- Commit: `3599c7c` A (restore Apple) → `0d81d7e` B (routing) → `9a9b7c2` C (katalog+UI). 83 test hijau.
-- **CATATAN BRANCH: kerja PLAN-006/007 ada di `external-model/v1`, BUKAN main** — perlu merge.
+- Latar: meski sudah 1-call Gemma, user MASIH menilai kurang efisien/kontrol → minta kendali penuh: pilih engine untuk TEKS dan GAMBAR terpisah, termasuk balikin opsi Apple lokal.
+- **Jalur Apple DIPULIHKAN dari `c8ca853^`** (FM + Vision OCR + heuristik — sempat dihapus PLAN-006) dibungkus `AppleTransactionParser`.
+- `RoutingTransactionParser`: teks & gambar masing-masing `.appleLocal` atau `.openRouter(slug, supportsStructured, displayName)`; engine dibaca SAAT CALL dari `ModelPreferenceStore` (UserDefaults, bukan Keychain — bukan rahasia) — ganti setting di Pengaturan langsung berlaku, tanpa rebuild dependencies.
+- `OpenRouterParser` diparameterisasi ulang: slug+structured per peran (bukan konstanta); model non-structured → prompt-JSON + `extractJSONObject` (di-restore, sempat dibuang saat collapse ke 1-call).
+- Katalog: `OpenRouterModelCatalog` (actor, cache in-memory) — `GET /api/v1/models` PUBLIK tanpa API key, map image-capable/structured/harga/gratis.
+- UI: Pengaturan → **Model AI** — per peran, pilih Apple (checkmark) atau OpenRouter → `ModelPickerView` (searchable, toggle "Hanya Gratis" default ON, filter image-capable otomatis utk peran gambar, badge JSON+harga, pull-to-refresh). Footnote jujur: Apple teks = English-only+Apple Intelligence; Apple gambar = OCR offline tanpa AI generatif.
+- Commit: `3599c7c` A (restore Apple) → `0d81d7e` B (routing+preference) → `9a9b7c2` C (katalog+UI) → `0ac765f` D (docs). 83 test hijau di titik ini.
+
+## PLAN-008 — Fix 404 (tangga fallback) + Text Entry bisa catat hutang
+
+Dipicu 2 hal sekaligus dari user: (a) error live baru `HTTP 404 No endpoints found` muncul LAGI setelah user ganti-ganti model sendiri di picker PLAN-007; (b) permintaan fitur — Text Entry ("Catat Cepat" lama) harus bisa mencatat hutang/piutang, bukan cuma transaksi.
+
+- **Root cause 404 (kali ini):** flag `supportsStructured` katalog itu metadata level-MODEL; dukungan nyata per-ENDPOINT provider bisa lebih sempit → kombinasi `response_format`+`reasoning`+`require_parameters` sering tanpa endpoint utk model pilihan bebas user.
+- **Fix: tangga fallback deterministik, model-agnostik** di `OpenRouterParser.complete()` — attempt 1 (structured+reasoning low) → attempt 2 (structured, tanpa reasoning) → attempt 3 (non-structured prompt-JSON). `OpenRouterRequestError.noEndpoints` (typed) dari client memicu percobaan berikutnya; semua gagal → arahkan user ganti model di Pengaturan.
+- **Fitur hutang di Text Entry:** `QuickEntry` enum (`.transaction`/`.debt`) + `DebtDraft`; `parseEntry` jadi requirement protokol `TransactionParsing` dengan **default `.transaction`** (engine Apple/mock tak perlu berubah). Schema OpenRouter tambah `record_kind`/`counterparty`/`direction`. Hasil debt → sheet `DebtFormView(.confirmDraft(draft))` prefilled, tetap dikonfirmasi user (pipeline sakral tak dilanggar). Siri intent masih transaksi-only (backlog).
+- Commit: `f3e67b1` (ladder+debt) → `2f57f88` (docs).
+
+## Tiga fix reaktif pasca-PLAN-008 (live user, belum ada plan doc sendiri — dicatat di sini)
+
+User coba `gpt-oss-20b:free` dgn entry hutang, tiga gagal-decode BERBEDA muncul BERTURUT-TURUT — tiap satu diperbaiki lalu muncul modus gagal baru (provider ini benar-benar tak konsisten formatnya):
+
+1. **`ed909b3`** — 200 OK tapi `content` = JSON valid + teks nyasar setelahnya (kebocoran channel reasoning "harmony" gpt-oss). Fix: decode toleran (strict dulu → `extractJSONObject`) dipakai utk SEMUA mode, bukan cuma non-structured.
+2. **`b1c2d90`** — masih gagal decode (159 bytes, tak ke-log isinya → buta). Fix: `GeneratedTransaction` decode LENTUR (amount terima number ATAU string "20.000"; field lain optional, tak menggagalkan seluruh decode bila satu field beda tipe/hilang) + jalur unwrap double-encoded (content = STRING JSON berisi objek) + log 300 char pertama saat semua gagal (diagnostik, bukan asumsi).
+3. **`1fac01f`** — ternyata `gpt-oss-20b:free` kadang **MENGABAIKAN `response_format` TOTAL** dan balas key-value/YAML mentah (`amount: 10000`, `owner: i_owe`, dst, alias beda-beda per model: `owner`≠direction, `keterangan`≠note). Fix: `parseLooseKeyValue` sbg fallback TERAKHIR — parse baris `key: value`, peta alias, wajib nominal>0 (jangan terima teks acak).
+
+**Pelajaran tercatat:** `gpt-oss-20b:free` tidak reliable untuk structured outputs meski metadata bilang dukung — kalau user pilih model ini, rantai fallback lengkap dipakai. Model default (`google/gemma-4-26b-a4b-it:free`) jauh lebih patuh JSON — disarankan ke user sbg default/utama, gpt-oss sbg cadangan saja.
+
+92 test hijau di titik ini (naik dari 63 di awal sesi).
+
+## Graphify — knowledge graph diperbarui
+
+`/graphify --update` dijalankan setelah PLAN-004..008: 55 file berubah (48 code + 7 doc) → AST 863 node/1630 edge + semantic 1 chunk subagent (55 node/65 edge, 3 hyperedge) → merge ke graph lama → **1041 node, 2173 edge, 36 komunitas** (naik dari 526 node awal sesi). Health check OK (nol dangling/collapsed). Cost kumulatif: 342,934 in / 7,500 out (2 run). Satu edge AMBIGUOUS tersisa: hubungan `Upload Resi (PhotosPicker in-app)` ↔ `OpenRouterParser` (drift dokumentasi PLAN-004→006, belum ditelusuri).
 
 ## Status verifikasi tertunda (device / user)
 
-- Menu "+" tap-through; Upload Resi end-to-end (galeri → OCR → simpan+gambar); Text Entry live parse (FM device-only); snippet ramping + auto-close "Edit di App" (inheren: `EditExpenseInAppIntent.openAppWhenRun` membatalkan `requestConfirmation`).
-- Sync iCloud antar device (masih tertunda dari sesi 01).
+- Menu "+" tap-through; Upload Resi end-to-end (galeri → parser pilihan → simpan+gambar); Text Entry live parse (Apple lokal = device-only untuk teks); snippet ramping + auto-close "Edit di App".
+- Sync iCloud antar device (masih tertunda dari sesi 01) — kini termasuk entity baru: `DebtRecord`/`DebtPayment`, `CategorySignal`.
 - Label periode di device id_ID harus "Juli 2026" (sim English menampilkan "July 2026").
+- **Pengaturan → Model AI**: user perlu coba kombinasi engine (terutama Apple-gambar = OCR offline murni tanpa network) dan verifikasi Text Entry hutang di device fisik.
+- gpt-oss-20b:free kalau dipilih user lagi — rantai fallback (ladder + decode lentur + key-value) belum full-loop diverifikasi live end-to-end sekaligus dalam satu request (tiap fix diverifikasi bertahap dari laporan terpisah).
 
 ## Langkah selanjutnya
 
-1. **User: paste API key OpenRouter di Pengaturan** (sim/device) → uji live Text Entry Indonesia, Upload Resi, snippet Siri, koreksi kategori 2× → lihat personalisasi bekerja.
-2. Verifikasi device tertunda lainnya (snippet Simpan/Edit/Batal, sync CloudKit entity baru: Debt*, CategorySignal).
-3. Backlog: Voice, batch, notifikasi jatuh tempo, asset management (visi), optimasi 1-call multimodal.
+1. **Merge/PR `external-model/v1` ke `main`** — SEMUA kerja PLAN-006/007/008 masih di branch ini, belum digabung. Prioritas #1 sebelum sesi berikutnya lupa.
+2. User: coba lagi kombinasi model di Model AI, verifikasi fallback gpt-oss tak lagi error, verifikasi Text Entry hutang end-to-end di device.
+3. Backlog: Siri intent utk hutang (kini Text Entry-only); dueDate dari kalimat NL; Voice, batch, notifikasi jatuh tempo, asset management (visi user); preset cepat Model AI ("Tercepat"/"Privasi penuh"/"Gratis terbaik").
 4. Rapikan seed demo (kategori income nempel ke expense — artefak seed).
+5. Telusuri edge AMBIGUOUS graphify (Upload Resi ↔ OpenRouterParser) bila mau riwayat pipeline resi 100% akurat di graph.
 
 ## Peta dokumen
 
-Sesi 01 → `01-context-window.md`. Plan aktif → `Docs/Plans/PLAN-004`. Knowledge graph → `graphify-out/graph.html` (526 node; `graphify query "<pertanyaan>"`).
+Sesi 01 → `01-context-window.md`. Plan chain sesi ini: `PLAN-004` (dashboard+capture) → `PLAN-005` (hutang) → `PLAN-006` (pivot OpenRouter) → `PLAN-007` (pilih model per-peran) → `PLAN-008` (fallback+debt entry). Knowledge graph → `graphify-out/graph.html` (1041 node; `graphify query "<pertanyaan>"`). **Branch kerja: `external-model/v1`.**
