@@ -44,6 +44,14 @@
 - Bonus pivot: input Indonesia didukung; parser jalan di simulator; FM gotchas lama (unsupportedLanguageOrLocale, ModelManagerError 1026) kini historis.
 - Commit: `f837149` A (transport) → `c8ca853` B (parser+hapus) → `3097e1d` C (signals) → `a7f3032` D (wiring+Settings).
 
+## PLAN-007 — Konfigurasi model per-peran (paling akhir sesi)
+
+- Latar: single-call Gemma variance liar (4.6s/10.7s/25.2s-timeout/3s) → user minta kendali penuh.
+- `RoutingTransactionParser`: teks & gambar masing-masing `.appleLocal` atau `.openRouter(slug)`; engine dibaca SAAT CALL dari `ModelPreferenceStore` (UserDefaults). Jalur Apple DIPULIHKAN dari `c8ca853^` (FM + Vision OCR + heuristik) dibungkus `AppleTransactionParser`. Model non-structured → prompt-JSON + `extractJSONObject` (restored). Katalog: `OpenRouterModelCatalog` (GET /models publik). UI: Pengaturan → Model AI (picker per peran + daftar model searchable/filter gratis/badge JSON).
+- Perf berjalan: 2-stage 23.2s → `reasoning.effort:"low"` 7.9s → single-call Gemma ~3-10s (variance provider free).
+- Commit: `3599c7c` A (restore Apple) → `0d81d7e` B (routing) → `9a9b7c2` C (katalog+UI). 83 test hijau.
+- **CATATAN BRANCH: kerja PLAN-006/007 ada di `external-model/v1`, BUKAN main** — perlu merge.
+
 ## Status verifikasi tertunda (device / user)
 
 - Menu "+" tap-through; Upload Resi end-to-end (galeri → OCR → simpan+gambar); Text Entry live parse (FM device-only); snippet ramping + auto-close "Edit di App" (inheren: `EditExpenseInAppIntent.openAppWhenRun` membatalkan `requestConfirmation`).
