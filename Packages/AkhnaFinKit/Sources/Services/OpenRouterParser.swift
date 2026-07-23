@@ -304,15 +304,21 @@ public struct OpenRouterParser: TransactionParsing {
         )
         parserLog.info("call \(slug, privacy: .public) selesai dalam \(clock.now - start, privacy: .public)")
 
-        let jsonData = structured ? data : (Self.extractJSONObject(from: data) ?? data)
-        do {
-            return try JSONDecoder().decode(GeneratedTransaction.self, from: jsonData)
-        } catch {
-            parserLog.error("decode gagal: \(String(describing: error), privacy: .public)")
-            throw TransactionParsingError.parsingFailed(
-                "Gagal memahami input itu. Coba tulis ulang lebih jelas."
-            )
+        // Decode toleran utk SEMUA mode: sebagian provider membocorkan teks di
+        // sekitar JSON meski structured (mis. channel reasoning gpt-oss) —
+        // coba strict dulu, gagal → ekstrak objek JSON seimbang.
+        if let generated = try? JSONDecoder().decode(GeneratedTransaction.self, from: data) {
+            return generated
         }
+        if let extracted = Self.extractJSONObject(from: data),
+           let generated = try? JSONDecoder().decode(GeneratedTransaction.self, from: extracted) {
+            parserLog.info("decode sukses via ekstraksi toleran (content tak murni JSON)")
+            return generated
+        }
+        parserLog.error("decode gagal (\(data.count) bytes, structured=\(structured))")
+        throw TransactionParsingError.parsingFailed(
+            "Gagal memahami input itu. Coba tulis ulang lebih jelas."
+        )
     }
 
     /// Ekstrak objek JSON pertama yang seimbang dari respons non-structured
