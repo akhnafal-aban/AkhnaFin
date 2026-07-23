@@ -293,8 +293,15 @@ public struct OpenRouterParser: TransactionParsing {
             or English) into a structured record. Amount rules: k=×1000, jt/m=×1000000; \
             never round or add zeros.
             record_kind is "debt" ONLY for lending/borrowing sentences (utang, piutang, \
-            pinjam, paylater bills): "utang ke Budi 50k" → debt, i_owe, counterparty Budi; \
-            "Budi pinjam 100k" → debt, owed_to_me. Regular purchases/income → transaction.
+            pinjam, paylater bills). Direction rules:
+            - i_owe = the USER owes: "utang ke Budi 50k" (owe TO Budi), "paylater 300k", \
+            "aku pinjam 100k ke Rani".
+            - owed_to_me = SOMEONE ELSE owes the user: "Rea utang 20k" (Rea is in debt → \
+            owes me), "Budi pinjam 100k dariku", "piutang ke Sarah".
+            Key: a NAME as the subject of "utang"/"pinjam" WITHOUT "ke" means that person \
+            owes the user (owed_to_me); "utang KE <name>" means the user owes (i_owe). \
+            Put the person/platform name in counterparty (not merchant) for debt. \
+            Regular purchases/income → transaction.
             """
         case .receipt:
             """
