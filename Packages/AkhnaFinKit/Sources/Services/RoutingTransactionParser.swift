@@ -29,6 +29,10 @@ public struct RoutingTransactionParser: TransactionParsing {
         try await resolve(preferenceStore.load().text).parse(text)
     }
 
+    public func parseEntry(_ text: String) async throws -> QuickEntry {
+        try await resolve(preferenceStore.load().text).parseEntry(text)
+    }
+
     public func parseBatch(_ text: String) async throws -> [TransactionDraft] {
         try await resolve(preferenceStore.load().text).parseBatch(text)
     }

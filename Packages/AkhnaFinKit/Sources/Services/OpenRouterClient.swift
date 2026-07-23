@@ -17,6 +17,14 @@ public enum OpenRouterModel {
     public static let model = "google/gemma-4-26b-a4b-it:free"
 }
 
+/// Error internal transport yang butuh penanganan khusus pemanggil.
+enum OpenRouterRequestError: Error {
+    /// HTTP 404 "No endpoints found that can handle the requested parameters" —
+    /// kombinasi model+parameter (response_format/reasoning + require_parameters)
+    /// tak punya endpoint. Pemanggil boleh retry dgn parameter lebih longgar.
+    case noEndpoints
+}
+
 /// Satu bagian isi pesan chat (teks atau gambar).
 public enum ORContentPart: Sendable {
     case text(String)
@@ -110,6 +118,11 @@ public struct OpenRouterClient: Sendable {
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else {
+            let apiMessage = (try? JSONDecoder().decode(APIErrorResponse.self, from: data))?.error.message
+            if status == 404, apiMessage?.contains("No endpoints found") == true {
+                clientLog.error("404 no-endpoints utk \(model, privacy: .public) (structured=\(structured), effort=\(reasoningEffort ?? "nil", privacy: .public))")
+                throw OpenRouterRequestError.noEndpoints
+            }
             throw Self.mapHTTPError(status: status, data: data)
         }
 

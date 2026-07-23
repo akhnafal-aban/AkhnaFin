@@ -30,17 +30,20 @@ struct TransactionListView: View {
     private let parser: (any TransactionParsing)?
     private let locationService: (any LocationCapturing)?
     private let signalRepository: SignalRepository?
+    private let debtRepository: DebtRepository?
 
     init(
         repository: TransactionRepository,
         parser: (any TransactionParsing)? = nil,
         locationService: (any LocationCapturing)? = nil,
-        signalRepository: SignalRepository? = nil
+        signalRepository: SignalRepository? = nil,
+        debtRepository: DebtRepository? = nil
     ) {
         self.repository = repository
         self.parser = parser
         self.locationService = locationService
         self.signalRepository = signalRepository
+        self.debtRepository = debtRepository
     }
 
     private var filteredTransactions: [MoneyTransaction] {
@@ -128,7 +131,8 @@ struct TransactionListView: View {
                         parser: parser,
                         repository: repository,
                         locationService: locationService,
-                        signalRepository: signalRepository
+                        signalRepository: signalRepository,
+                        debtRepository: debtRepository
                     )
                 }
             }
