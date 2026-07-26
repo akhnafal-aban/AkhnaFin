@@ -44,6 +44,12 @@ struct AkhnaFinApp: App {
                 source: .manual,
                 category: sameKind.isEmpty ? nil : sameKind[offset % sameKind.count]
             )
+            // Sebagian diberi lokasi (verifikasi tampilan peta di TransactionDetailView).
+            if offset % 3 == 0 {
+                transaction.latitude = -6.2088 + Double(offset) * 0.0015
+                transaction.longitude = 106.8456 + Double(offset) * 0.0015
+                transaction.placeName = ["Kantin Kantor", "Warung Bu Sri", "Starbucks Sudirman", "Indomaret"][offset / 3 % 4]
+            }
             context.insert(transaction)
         }
         // Hutang dummy: paylater terlambat, piutang teman, satu lunas.

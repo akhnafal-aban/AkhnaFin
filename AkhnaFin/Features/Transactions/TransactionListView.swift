@@ -63,26 +63,28 @@ struct TransactionListView: View {
                 ForEach(TransactionGrouping.groupByDay(filteredTransactions), id: \.day) { group in
                     Section {
                         ForEach(group.items) { transaction in
-                            TransactionRow(transaction)
-                                .contentShape(Rectangle())
-                                .onTapGesture { editingTransaction = transaction }
-                                .swipeActions(edge: .trailing) {
-                                    Button(role: .destructive) {
-                                        do {
-                                            try repository.delete(transaction)
-                                        } catch {
-                                            deleteFailed = true
-                                        }
-                                    } label: {
-                                        Label("Hapus", systemImage: "trash")
+                            NavigationLink {
+                                TransactionDetailView(transaction: transaction, repository: repository)
+                            } label: {
+                                TransactionRow(transaction)
+                            }
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    do {
+                                        try repository.delete(transaction)
+                                    } catch {
+                                        deleteFailed = true
                                     }
-                                    Button {
-                                        editingTransaction = transaction
-                                    } label: {
-                                        Label("Edit", systemImage: "pencil")
-                                    }
-                                    .tint(.blue)
+                                } label: {
+                                    Label("Hapus", systemImage: "trash")
                                 }
+                                Button {
+                                    editingTransaction = transaction
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.blue)
+                            }
                         }
                     } header: {
                         Text(group.day, format: .dateTime.weekday(.wide).day().month(.wide))
