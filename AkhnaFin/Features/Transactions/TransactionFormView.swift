@@ -36,6 +36,9 @@ struct TransactionFormView: View {
     @State private var saveFailed = false
     @State private var isSaving = false
 
+    @State private var isReimbursable: Bool
+    @State private var reimbursedBy: String = ""
+
     init(
         mode: Mode,
         repository: TransactionRepository,
@@ -50,6 +53,8 @@ struct TransactionFormView: View {
         self.onCommitted = onCommitted
 
         let initial: (TransactionType, Decimal, Date, String, String, TransactionCategory?)
+        var reimbursableInitial = false
+        var reimbursedByInitial = ""
         switch mode {
         case .add:
             initial = (.expense, 0, .now, "", "", nil)
@@ -58,8 +63,12 @@ struct TransactionFormView: View {
                 transaction.type, transaction.amount, transaction.date,
                 transaction.merchant, transaction.note, transaction.category
             )
+            reimbursableInitial = transaction.isReimbursable
+            reimbursedByInitial = transaction.reimbursedBy
         case .confirmDraft(let draft, _, _):
             initial = (draft.type, draft.amount, draft.date, draft.merchant, draft.note, nil)
+            reimbursableInitial = draft.isReimbursable
+            reimbursedByInitial = draft.reimbursedBy
         }
         _type = State(initialValue: initial.0)
         _amount = State(initialValue: initial.1)
@@ -67,6 +76,8 @@ struct TransactionFormView: View {
         _merchant = State(initialValue: initial.3)
         _note = State(initialValue: initial.4)
         _category = State(initialValue: initial.5)
+        _isReimbursable = State(initialValue: reimbursableInitial)
+        _reimbursedBy = State(initialValue: reimbursedByInitial)
     }
 
     var body: some View {
@@ -97,6 +108,23 @@ struct TransactionFormView: View {
                     DatePicker("Tanggal", selection: $date)
                     TextField("Merchant / tempat beli", text: $merchant)
                     TextField("Catatan", text: $note)
+                }
+
+                if isEditing || type == .expense || type == .income {
+                    Section {
+                        Toggle(isOn: $isReimbursable) {
+                            Text(type == .income ? "Ini pinjaman" : "Ini talangan")
+                        }
+                        if isReimbursable {
+                            TextField("Nama teman", text: $reimbursedBy)
+                        }
+                    } header: {
+                        Text(type == .income ? "Pinjaman" : "Talangan")
+                    } footer: {
+                        if isReimbursable && !isEditing {
+                            Text( reimbursableFooter)
+                        }
+                    }
                 }
             }
             .keyboardDismissable()
@@ -135,7 +163,22 @@ struct TransactionFormView: View {
     }
 
     private var rawInput: String {
-        if case .confirmDraft(let draft, _, _) = mode { draft.rawInput } else { "" }
+        if case .confirmDraft(let draft, _, _) = mode { draft.rawInput } else { ""
+        }
+    }
+
+    /// Talangan bisa disetel di: add (expense), confirmDraft (expense), atau edit (reimbursable existing).
+    private var isEditing: Bool {
+        if case .edit = mode { true } else { false }
+    }
+
+    /// Footer dinamis berdasarkan jenis transaksi.
+    private var reimbursableFooter: String {
+        if type == .income {
+            "Pemasukan ini adalah uang pinjaman. Saldo bank bertambah, tapi otomatis membuat catatan utang. Saat dibayar balik, catat sebagai pembayaran cicilan utang (bukan pengeluaran baru)."
+        } else {
+            "Transaksi dicatat sebagai pengeluaran (saldo bank berkurang), tapi otomatis membuat catatan piutang. Saat dibayar balik, catat sebagai pembayaran cicilan hutang (bukan pemasukan baru)."
+        }
     }
 
     /// Preselect kategori dari saran parser — sekali saja (mode confirmDraft).
@@ -183,16 +226,25 @@ struct TransactionFormView: View {
     private func persist(place: CapturedPlace?) throws {
         switch mode {
         case .add:
-            let transaction = MoneyTransaction(
-                amount: amount, type: type, date: date, note: note,
-                merchant: merchant, source: .manual, category: category
-            )
-            if let place {
-                transaction.latitude = place.latitude
-                transaction.longitude = place.longitude
-                transaction.placeName = place.placeName
+            if isReimbursable {
+                try repository.createReimbursable(
+                    amount: amount, type: type, date: date,
+                    note: note, merchant: merchant,
+                    reimbursedBy: reimbursedBy, category: category,
+                    place: place
+                )
+            } else {
+                let transaction = MoneyTransaction(
+                    amount: amount, type: type, date: date, note: note,
+                    merchant: merchant, source: .manual, category: category
+                )
+                if let place {
+                    transaction.latitude = place.latitude
+                    transaction.longitude = place.longitude
+                    transaction.placeName = place.placeName
+                }
+                try repository.create(transaction)
             }
-            try repository.create(transaction)
 
         case .edit(let transaction):
             transaction.type = type
@@ -201,10 +253,11 @@ struct TransactionFormView: View {
             transaction.merchant = merchant
             transaction.note = note
             transaction.category = category
+            transaction.isReimbursable = isReimbursable
+            transaction.reimbursedBy = reimbursedBy
             try repository.save()
 
         case .confirmDraft(let draft, let source, let receiptImage):
-            // Draft final dari state hasil editan user — tetap lewat pipeline commit().
             var categoryName = ""
             var subcategoryName = ""
             if let category {
@@ -219,13 +272,11 @@ struct TransactionFormView: View {
                 amount: amount, currencyCode: draft.currencyCode, type: type,
                 date: date, note: note, merchant: merchant,
                 categoryName: categoryName, subcategoryName: subcategoryName,
-                rawInput: draft.rawInput
+                rawInput: draft.rawInput,
+                isReimbursable: isReimbursable, reimbursedBy: reimbursedBy
             )
             try repository.commit(finalDraft, source: source, place: place, receiptImage: receiptImage)
 
-            // Belajar: user mengubah kategori dari saran model = koreksi (bobot
-            // besar); menerima apa adanya = penguat. Gagal merekam tak boleh
-            // menggagalkan simpan (best-effort).
             let edited = categoryName != draft.categoryName
                 || subcategoryName != draft.subcategoryName
             try? signalRepository?.record(

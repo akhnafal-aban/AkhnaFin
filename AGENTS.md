@@ -93,3 +93,16 @@ Semua `@Model`: atribut optional **atau** punya default; relasi optional **dan**
 ## Roadmap fase (konteks arah)
 
 Fase 0 ✅ fondasi + CRUD manual → **Fase 1** NL parser (Foundation Models, `@Generable`, tanpa heuristic fallback — graceful state bila model unavailable) → Fase 2 App Intents/Siri → Fase 3 Voice → Fase 4 struk (Vision OCR → parser; multimodal saat iOS 27) → Fase 5 batch → Fase 6 dashboard (fixed, Swift Charts). Lokasi ditangkap otomatis-senyap saat commit (switch off di Settings). Kategori seed: Main Food; Lifestyle→(Jajan, Hiburan, Olahraga); Tagihan; Transport; Kesehatan; Gaji; Bonus.
+
+## Installed skills (swift-ios-skills)
+
+36 skill dari `~/.claude/skills-repos/swift-ios-skills`:
+
+**Core Swift (7):** swift-language, swift-concurrency, swift-testing, swift-formatstyle, swift-api-design-guidelines, swift-codable, swift-architecture
+**SwiftData + CloudKit (2):** swiftdata, cloudkit
+**SwiftUI (6):** swiftui-patterns, swiftui-navigation, swiftui-liquid-glass, swiftui-animation, swiftui-layout-components, swiftui-performance
+**Fase 1-6 (7):** apple-on-device-ai, app-intents, speech-recognition, vision-framework, swift-charts, mapkit, natural-language
+**iOS engineering (8):** ios-networking, swift-security, authentication, push-notifications, swiftlint, debugging-instruments, ios-accessibility, ios-localization
+**Lainnya (6):** storekit, background-processing, photokit, tipkit, widgetkit, activitykit
+
+Update: `cd ~/.claude/skills-repos/swift-ios-skills && git pull`

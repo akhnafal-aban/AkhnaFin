@@ -29,6 +29,12 @@ public final class MoneyTransaction {
     @Attribute(.externalStorage)
     public var receiptImageData: Data?
 
+    /// Talangan: transaksi ini dibayari dulu untuk orang lain.
+    /// Saat true, dashboard exclude dari income/expense biasa & auto-bikin DebtRecord.
+    public var isReimbursable: Bool = false
+    /// Nama orang yang ditalangi (diisi manual atau dari parser).
+    public var reimbursedBy: String = ""
+
     /// Kategori transaksi. CloudKit: optional; inverse ada di `TransactionCategory.transactions`.
     public var category: TransactionCategory?
 
@@ -43,6 +49,8 @@ public final class MoneyTransaction {
         source: EntrySource = .manual,
         rawInput: String = "",
         createdAt: Date = .now,
+        isReimbursable: Bool = false,
+        reimbursedBy: String = "",
         category: TransactionCategory? = nil
     ) {
         self.id = id
@@ -55,6 +63,8 @@ public final class MoneyTransaction {
         self.source = source
         self.rawInput = rawInput
         self.createdAt = createdAt
+        self.isReimbursable = isReimbursable
+        self.reimbursedBy = reimbursedBy
         self.category = category
     }
 }

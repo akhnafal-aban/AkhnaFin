@@ -43,6 +43,16 @@ public enum StatsPeriod: String, CaseIterable, Sendable {
 /// Agregasi murni untuk dashboard — tanpa UI, tanpa SwiftData query; input array
 /// transaksi (hasil `@Query` di View), output nilai siap-chart. Unit-testable.
 public enum TransactionAggregation {
+    /// Filter hanya transaksi NON-talangan (default true untuk backward compat).
+    public static func nonReimbursable(_ transactions: [MoneyTransaction]) -> [MoneyTransaction] {
+        transactions.filter { !$0.isReimbursable }
+    }
+
+    /// Hanya transaksi talangan (reimbursable).
+    public static func reimbursableExpenses(_ transactions: [MoneyTransaction]) -> [MoneyTransaction] {
+        transactions.filter { $0.isReimbursable }
+    }
+
     /// Satu irisan donut kategori.
     public struct CategorySlice: Equatable, Sendable {
         public let name: String

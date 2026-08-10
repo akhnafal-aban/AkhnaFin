@@ -186,4 +186,81 @@ struct PersistenceTests {
         #expect(result.count == 1)
         #expect(result.first?.amount == 10000)
     }
+
+    @Test("Commit reimbursable otomatis membuat DebtRecord (owedToMe)")
+    func commitReimbursableCreatesDebt() throws {
+        let context = try makeContext()
+        let repository = TransactionRepository(context: context)
+
+        let draft = TransactionDraft(
+            amount: 50000, note: "talangan budi",
+            merchant: "Makan siang teman", rawInput: "talangin budi 50k",
+            isReimbursable: true, reimbursedBy: "Budi"
+        )
+        let tx = try repository.commit(draft, source: .quickAdd)
+        #expect(tx.isReimbursable == true)
+        #expect(tx.reimbursedBy == "Budi")
+
+        let debts = try context.fetch(FetchDescriptor<DebtRecord>())
+        #expect(debts.count == 1)
+        #expect(debts[0].direction == .owedToMe)
+        #expect(debts[0].counterparty == "Budi")
+        #expect(debts[0].principal == 50000)
+    }
+
+    @Test("createReimbursable membuat transaksi + hutang atomic")
+    func createReimbursableAtomic() throws {
+        let context = try makeContext()
+        let repository = TransactionRepository(context: context)
+
+        // Expense → owedToMe (talangan)
+        let tx = try repository.createReimbursable(
+            amount: 75000, type: .expense, date: .now,
+            note: "talangan ani", merchant: "Cafe",
+            reimbursedBy: "Ani", category: nil
+        )
+        #expect(tx.isReimbursable == true)
+        #expect(tx.reimbursedBy == "Ani")
+        #expect(tx.type == .expense)
+
+        // Income → iOwe (pinjaman)
+        let tx2 = try repository.createReimbursable(
+            amount: 500000, type: .income, date: .now,
+            note: "pinjam budi", merchant: "Budi",
+            reimbursedBy: "Budi", category: nil
+        )
+        #expect(tx2.isReimbursable == true)
+        #expect(tx2.reimbursedBy == "Budi")
+        #expect(tx2.type == .income)
+
+        let allTx = try repository.fetchAll()
+        #expect(allTx.count == 2)
+
+        let debts = try context.fetch(FetchDescriptor<DebtRecord>())
+        #expect(debts.count == 2)
+        #expect(debts.contains { $0.counterparty == "Ani" && $0.direction == .owedToMe && $0.principal == 75000 })
+        #expect(debts.contains { $0.counterparty == "Budi" && $0.direction == .iOwe && $0.principal == 500000 })
+    }
+
+    @Test("Commit reimbursable income membuat DebtRecord iOwe (pinjaman)")
+    func commitReimbursableIncomeCreatesDebt() throws {
+        let context = try makeContext()
+        let repository = TransactionRepository(context: context)
+
+        let draft = TransactionDraft(
+            amount: 300000, type: .income, note: "pinjam budi",
+            merchant: "Budi", rawInput: "pinjam budi 300k",
+            isReimbursable: true, reimbursedBy: "Budi"
+        )
+        let tx = try repository.commit(draft, source: .quickAdd)
+        #expect(tx.isReimbursable == true)
+        #expect(tx.type == .income)
+        #expect(tx.reimbursedBy == "Budi")
+
+        let debts = try context.fetch(FetchDescriptor<DebtRecord>())
+        #expect(debts.count == 1)
+        #expect(debts[0].direction == .iOwe)
+        #expect(debts[0].counterparty == "Budi")
+        #expect(debts[0].principal == 300000)
+    }
 }

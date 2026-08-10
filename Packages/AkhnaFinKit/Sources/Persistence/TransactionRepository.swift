@@ -56,6 +56,9 @@ public final class TransactionRepository {
 
     /// Ubah draft hasil parsing menjadi `MoneyTransaction` tersimpan;
     /// lokasi & gambar resi opsional ditempelkan di sini.
+    /// Bila `draft.isReimbursable`, auto-bikin `DebtRecord` terkait:
+    /// - expense → owedToMe (saya talangi orang)
+    /// - income → iOwe (saya pinjam dari orang)
     @discardableResult
     public func commit(
         _ draft: TransactionDraft,
@@ -76,6 +79,18 @@ public final class TransactionRepository {
             rawInput: draft.rawInput,
             category: try resolvedCategory(for: draft)
         )
+        if draft.isReimbursable {
+            transaction.isReimbursable = true
+            transaction.reimbursedBy = draft.reimbursedBy
+            let direction: DebtDirection = draft.type == .expense ? .owedToMe : .iOwe
+            let debt = DebtRecord(
+                counterparty: draft.reimbursedBy,
+                direction: direction,
+                principal: draft.amount,
+                note: draft.note
+            )
+            context.insert(debt)
+        }
         if let place {
             transaction.latitude = place.latitude
             transaction.longitude = place.longitude
@@ -83,6 +98,48 @@ public final class TransactionRepository {
         }
         transaction.receiptImageData = receiptImage
         context.insert(transaction)
+        try context.save()
+        return transaction
+    }
+
+    /// Simpan transaksi reimbursable manual + auto-bikin DebtRecord (satu save atomic).
+    /// expense → owedToMe; income → iOwe.
+    @discardableResult
+    public func createReimbursable(
+        amount: Decimal,
+        type: TransactionType,
+        date: Date,
+        note: String,
+        merchant: String,
+        reimbursedBy: String,
+        category: TransactionCategory?,
+        place: CapturedPlace? = nil
+    ) throws -> MoneyTransaction {
+        let transaction = MoneyTransaction(
+            amount: amount,
+            type: type,
+            date: date,
+            note: note,
+            merchant: merchant,
+            source: .manual,
+            isReimbursable: true,
+            reimbursedBy: reimbursedBy,
+            category: category
+        )
+        if let place {
+            transaction.latitude = place.latitude
+            transaction.longitude = place.longitude
+            transaction.placeName = place.placeName
+        }
+        context.insert(transaction)
+        let direction: DebtDirection = type == .expense ? .owedToMe : .iOwe
+        let debt = DebtRecord(
+            counterparty: reimbursedBy,
+            direction: direction,
+            principal: amount,
+            note: note
+        )
+        context.insert(debt)
         try context.save()
         return transaction
     }

@@ -37,4 +37,11 @@ struct AkhnaFinCoreTests {
         #expect(s.contains("Rp"))
         #expect(s.contains("20"))
     }
+
+    @Test("Reimbursable default false & reimbursedBy kosong")
+    func reimbursableDefaults() {
+        let tx = MoneyTransaction()
+        #expect(tx.isReimbursable == false)
+        #expect(tx.reimbursedBy.isEmpty)
+    }
 }
