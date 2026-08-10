@@ -71,6 +71,18 @@ struct EditExpenseInAppIntent: AppIntent {
     }
 }
 
+/// "Batal": buang draft, tutup snippet.
+struct CancelDraftIntent: AppIntent {
+    static let title: LocalizedStringResource = "Batalkan"
+    static let isDiscoverable = false
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        PendingDraftStore.clearStash()
+        return .result(dialog: "Dibatalkan.")
+    }
+}
+
 // MARK: - Kartu snippet
 
 /// Kartu ringkas + tiga tombol. Sengaja minimalis (nominal + jenis + satu
@@ -124,6 +136,11 @@ struct DraftSnippetView: View {
                     }
                     .buttonStyle(.bordered)
                 }
+
+                Button(intent: CancelDraftIntent()) {
+                    Text("Batal").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderless)
             }
             .padding()
         } else {
