@@ -77,15 +77,21 @@ struct CategoryEditView: View {
     private var iconGrid: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 12) {
             ForEach(Self.iconChoices, id: \.self) { symbol in
-                Image(systemName: symbol)
-                    .font(.title3)
-                    .frame(width: 40, height: 40)
-                    .foregroundStyle(iconName == symbol ? Color.white : Color.primary)
-                    .background(
-                        iconName == symbol ? Color(hex: colorHex) : Color(.secondarySystemFill),
-                        in: RoundedRectangle(cornerRadius: 9)
-                    )
-                    .onTapGesture { iconName = symbol }
+                Button {
+                    iconName = symbol
+                } label: {
+                    Image(systemName: symbol)
+                        .font(.title3)
+                        .frame(width: 40, height: 40)
+                        .foregroundStyle(iconName == symbol ? Color.white : Color.primary)
+                        .background(
+                            iconName == symbol ? Color(hex: colorHex) : Color(.secondarySystemFill),
+                            in: RoundedRectangle(cornerRadius: 9)
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Ikon \(symbol)")
+                .accessibilityAddTraits(iconName == symbol ? [.isButton, .isSelected] : .isButton)
             }
         }
         .padding(.vertical, 4)
@@ -94,15 +100,21 @@ struct CategoryEditView: View {
     private var colorRow: some View {
         HStack(spacing: 12) {
             ForEach(Self.colorChoices, id: \.self) { hex in
-                Circle()
-                    .fill(Color(hex: hex))
-                    .frame(width: 30, height: 30)
-                    .overlay {
-                        if colorHex == hex {
-                            Image(systemName: "checkmark").font(.caption.bold()).foregroundStyle(.white)
+                Button {
+                    colorHex = hex
+                } label: {
+                    Circle()
+                        .fill(Color(hex: hex))
+                        .frame(width: 30, height: 30)
+                        .overlay {
+                            if colorHex == hex {
+                                Image(systemName: "checkmark").font(.caption.bold()).foregroundStyle(.white)
+                            }
                         }
-                    }
-                    .onTapGesture { colorHex = hex }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Self.colorName(for: hex))
+                .accessibilityAddTraits(colorHex == hex ? [.isButton, .isSelected] : .isButton)
             }
         }
     }
@@ -146,4 +158,20 @@ struct CategoryEditView: View {
         "#F97316", "#8B5CF6", "#EF4444", "#3B82F6", "#10B981",
         "#22C55E", "#EAB308", "#EC4899", "#06B6D4", "#64748B",
     ]
+
+    private static func colorName(for hex: String) -> String {
+        switch hex {
+        case "#F97316": "Warna Oranye"
+        case "#8B5CF6": "Warna Ungu"
+        case "#EF4444": "Warna Merah"
+        case "#3B82F6": "Warna Biru"
+        case "#10B981": "Warna Hijau Tua"
+        case "#22C55E": "Warna Hijau"
+        case "#EAB308": "Warna Kuning"
+        case "#EC4899": "Warna Pink"
+        case "#06B6D4": "Warna Cyan"
+        case "#64748B": "Warna Abu"
+        default: "Warna"
+        }
+    }
 }
