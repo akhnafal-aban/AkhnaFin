@@ -4,11 +4,18 @@ import Charts
 import AkhnaFinCore
 import Persistence
 
-/// Dashboard fase C: ringkasan periode + donut kategori + bar tren.
+/// Dashboard: ringkasan periode + donut + tren + total saldo.
 ///
-/// Layout FIXED (reorderable container = enhancement iOS 27). Read reaktif via
-/// `@Query`; agregasi murni di `TransactionAggregation` (Core) — View hanya
-/// memetakan hasilnya ke Swift Charts.
+/// **Total Saldo** = saldo bank riil (SEMUA pemasukan - SEMUA pengeluaran,
+/// termasuk talangan/pinjaman — uang benar-benar masuk/keluar dari rekening).
+///
+/// **Selisih Kas** = Total Saldo + piutang − utang (net worth — posisi keuangan
+/// sebenarnya jika hutang diperhitungkan).
+///
+/// Talangan (reimbursable) TETAP dihitung di ringkasan kas, donut, dan tren
+/// karena uang sungguhan mengalir; piutang/utang muncul sebagai informasi
+/// tambahan di header. `TransactionAggregation` menyediakan filter
+/// `nonReimbursable()` bila analisis khusus diperlukan.
 struct DashboardView: View {
     @Query private var transactions: [MoneyTransaction]
     @Query private var debts: [DebtRecord]
@@ -16,16 +23,12 @@ struct DashboardView: View {
     @State private var period: StatsPeriod = .month
     @State private var interval: DateInterval = StatsPeriod.month.interval(containing: .now)
 
-    /// Untuk NavigationLink ke layar kelola hutang; nil = kartu Hutang disembunyikan
-    /// (Preview lama tetap jalan).
     private let debtRepository: DebtRepository?
 
     init(debtRepository: DebtRepository? = nil) {
         self.debtRepository = debtRepository
     }
 
-    /// Maksimal irisan donut bernama; sisanya digulung ke "Lainnya" (HIG chart:
-    /// 5–7 sektor agar terbaca).
     private static let maxSlices = 5
 
     var body: some View {
@@ -33,6 +36,14 @@ struct DashboardView: View {
             List {
                 Section {
                     periodControls
+                }
+
+                if !transactions.isEmpty || !debts.isEmpty {
+                    Section {
+                        totalSaldoHeader
+                        selisihKasRow
+                        debtStatusRow
+                    }
                 }
 
                 if periodTransactions.isEmpty {
@@ -43,7 +54,6 @@ struct DashboardView: View {
                     )
                     .listRowBackground(Color.clear)
 
-                    // Hutang independen dari periode — tetap tampil saat periode kosong.
                     if let debtRepository {
                         Section("Hutang") {
                             debtCard(repository: debtRepository)
@@ -58,8 +68,6 @@ struct DashboardView: View {
                             categoryDonut
                         }
                     }
-                    // Hutang setelah Ringkasan (keputusan plan): outstanding =
-                    // kondisi saat ini, independen dari periode.
                     if let debtRepository {
                         Section("Hutang") {
                             debtCard(repository: debtRepository)
@@ -74,8 +82,6 @@ struct DashboardView: View {
             .navigationTitle("Dashboard")
             .toolbarTitleDisplayMode(.inlineLarge)
             .onChange(of: period) {
-                // Ganti granularitas → kembali ke periode yang memuat HARI INI
-                // (offset minggu-ke-3 tak bermakna setelah pindah ke Bulan).
                 interval = period.interval(containing: .now)
             }
         }
@@ -138,6 +144,8 @@ struct DashboardView: View {
 
     // MARK: - Data turunan (agregasi di Core)
 
+    /// Transaksi periode ini — SEMUA jenis termasuk talangan/pinjaman.
+    /// Talangan mengurangi saldo riil (uang keluar); piutang mengimbangi di info hutang.
     private var periodTransactions: [MoneyTransaction] {
         transactions.filter { interval.contains($0.date) }
     }
@@ -160,6 +168,24 @@ struct DashboardView: View {
             ? TransactionAggregation.monthlyExpenseSeries(periodTransactions, in: interval)
                 .map { (day: $0.month, total: $0.total) }
             : TransactionAggregation.dailyExpenseSeries(periodTransactions, in: interval)
+    }
+
+    // MARK: - Total Saldo & Selisih Kas
+
+    /// Total Saldo = saldo bank riil (SEMUA pemasukan − SEMUA pengeluaran).
+    private var totalSaldo: Decimal {
+        let t = TransactionAggregation.totals(transactions)
+        return t.income - t.expense
+    }
+
+    /// Selisih Kas = total saldo + piutang − utang = net worth.
+    private var selisihKas: Decimal {
+        totalSaldo + netDebt
+    }
+
+    private var netDebt: Decimal {
+        let s = DebtSummary.outstanding(debts)
+        return s.owedToMe - s.iOwe
     }
 
     // MARK: - Ringkasan
@@ -185,6 +211,49 @@ struct DashboardView: View {
                 .font(.body.monospacedDigit().weight(.semibold))
         }
         .accessibilityElement(children: .combine)
+    }
+
+    // MARK: - Total Saldo & Selisih Kas
+
+    private var totalSaldoHeader: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Total Saldo")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+            Text(CurrencyFormatter.string(from: totalSaldo))
+                .font(.title2.weight(.bold))
+                .foregroundStyle(totalSaldo >= 0 ? Color.primary : Color.red)
+        }
+    }
+
+    /// BIG TEXT — Selisih Kas = net worth (saldo bank + piutang − utang).
+    private var selisihKasRow: some View {
+        HStack {
+            Label("Selisih Kas", systemImage: "wallet.pass")
+                .font(.callout)
+            Spacer()
+            Text(CurrencyFormatter.string(from: selisihKas))
+                .font(.title3.monospacedDigit().weight(.semibold))
+                .foregroundStyle(selisihKas >= 0 ? Color.green : Color.red)
+        }
+    }
+
+    /// Akumulasi hutang piutang — teks kecil di bawah Selisih Kas.
+    private var debtStatusRow: some View {
+        let s = DebtSummary.outstanding(debts)
+        return HStack(spacing: 12) {
+            Label("Piutang", systemImage: "arrow.down.left.circle.fill")
+                .foregroundStyle(.green)
+                .font(.caption)
+            Text(CurrencyFormatter.string(from: s.owedToMe))
+                .font(.caption.monospacedDigit().weight(.semibold))
+            Divider().frame(height: 12)
+            Label("Utang", systemImage: "arrow.up.right.circle.fill")
+                .foregroundStyle(.red)
+                .font(.caption)
+            Text(CurrencyFormatter.string(from: s.iOwe))
+                .font(.caption.monospacedDigit().weight(.semibold))
+        }
     }
 
     // MARK: - Kartu Hutang

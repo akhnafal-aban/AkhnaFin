@@ -31,11 +31,22 @@ struct ServiceInterfacesTests {
             merchant: "Kantin Kantor",
             categoryName: "Main Food",
             subcategoryName: "",
-            rawInput: "buy meatballs 20k"
+            rawInput: "buy meatballs 20k",
+            isReimbursable: true,
+            reimbursedBy: "Budi"
         )
         let data = try JSONEncoder().encode(draft)
         let decoded = try JSONDecoder().decode(TransactionDraft.self, from: data)
         #expect(decoded == draft)
+        #expect(decoded.isReimbursable == true)
+        #expect(decoded.reimbursedBy == "Budi")
+    }
+
+    @Test("TransactionDraft default reimbursable false")
+    func draftReimbursableDefaults() throws {
+        let draft = TransactionDraft(amount: 10000, rawInput: "test")
+        #expect(draft.isReimbursable == false)
+        #expect(draft.reimbursedBy.isEmpty)
     }
 
     @Test("Mock location mengembalikan tempat yang di-set")

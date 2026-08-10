@@ -16,6 +16,11 @@ public struct TransactionDraft: Sendable, Equatable, Codable {
     public var subcategoryName: String
     public var rawInput: String
 
+    /// Talangan: dibayari dulu untuk orang lain.
+    /// Parser bisa set ini dari kalimat ("talangin budi 50k").
+    public var isReimbursable: Bool = false
+    public var reimbursedBy: String = ""
+
     public init(
         amount: Decimal = 0,
         currencyCode: String = "IDR",
@@ -25,7 +30,9 @@ public struct TransactionDraft: Sendable, Equatable, Codable {
         merchant: String = "",
         categoryName: String = "",
         subcategoryName: String = "",
-        rawInput: String = ""
+        rawInput: String = "",
+        isReimbursable: Bool = false,
+        reimbursedBy: String = ""
     ) {
         self.amount = amount
         self.currencyCode = currencyCode
@@ -36,5 +43,7 @@ public struct TransactionDraft: Sendable, Equatable, Codable {
         self.categoryName = categoryName
         self.subcategoryName = subcategoryName
         self.rawInput = rawInput
+        self.isReimbursable = isReimbursable
+        self.reimbursedBy = reimbursedBy
     }
 }

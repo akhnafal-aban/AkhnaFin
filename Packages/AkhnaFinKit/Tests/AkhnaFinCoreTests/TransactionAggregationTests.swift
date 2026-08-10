@@ -154,4 +154,40 @@ struct TransactionAggregationTests {
         #expect(series[1].total == 0)
         #expect(series[6].total == 75_000)
     }
+
+    @Test("nonReimbursable mengeluarkan transaksi talangan")
+    func nonReimbursableFilter() {
+        let normal = MoneyTransaction(amount: 10000)
+        let talangan = MoneyTransaction(amount: 50000, isReimbursable: true, reimbursedBy: "Budi")
+        let all = [normal, talangan]
+        let filtered = TransactionAggregation.nonReimbursable(all)
+        #expect(filtered.count == 1)
+        #expect(filtered[0].amount == 10000)
+    }
+
+    @Test("reimbursableExpenses hanya mengembalikan transaksi talangan")
+    func reimbursableExpensesFilter() {
+        let normal = MoneyTransaction(amount: 10000)
+        let talangan = MoneyTransaction(amount: 50000, isReimbursable: true, reimbursedBy: "Budi")
+        let all = [normal, talangan]
+        let filtered = TransactionAggregation.reimbursableExpenses(all)
+        #expect(filtered.count == 1)
+        #expect(filtered[0].isReimbursable == true)
+    }
+
+    @Test("nonReimbursable + totals: expense talangan tidak dihitung")
+    func nonReimbursableAndTotals() {
+        let normal = MoneyTransaction(amount: 20000, type: .expense)
+        let talangan = MoneyTransaction(amount: 50000, type: .expense, isReimbursable: true)
+        let income = MoneyTransaction(amount: 100000, type: .income)
+        let all = [normal, talangan, income]
+
+        let filtered = TransactionAggregation.nonReimbursable(all)
+        #expect(filtered.count == 2)
+        #expect(filtered[0].amount == 20000)
+
+        let t = TransactionAggregation.totals(filtered)
+        #expect(t.expense == 20000)   // talangan 50k tidak ikut
+        #expect(t.income == 100000)
+    }
 }

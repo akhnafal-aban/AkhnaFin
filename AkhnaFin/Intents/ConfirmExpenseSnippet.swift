@@ -71,18 +71,6 @@ struct EditExpenseInAppIntent: AppIntent {
     }
 }
 
-/// "Batal": buang draft, tutup snippet.
-struct CancelDraftIntent: AppIntent {
-    static let title: LocalizedStringResource = "Batalkan"
-    static let isDiscoverable = false
-
-    @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        PendingDraftStore.clearStash()
-        return .result(dialog: "Dibatalkan.")
-    }
-}
-
 // MARK: - Kartu snippet
 
 /// Kartu ringkas + tiga tombol. Sengaja minimalis (nominal + jenis + satu
@@ -107,8 +95,17 @@ struct DraftSnippetView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    if let (icon, text) = descriptor(of: draft) {
-                        row(icon, text)
+                    if !draft.categoryName.isEmpty {
+                        let label = draft.subcategoryName.isEmpty
+                            ? draft.categoryName
+                            : "\(draft.categoryName) › \(draft.subcategoryName)"
+                        row("tag", label)
+                    }
+                    if !draft.merchant.isEmpty {
+                        row("storefront", draft.merchant)
+                    }
+                    if !draft.note.isEmpty {
+                        row("text.alignleft", draft.note)
                     }
                     row("calendar", draft.date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                 }
@@ -127,11 +124,6 @@ struct DraftSnippetView: View {
                     }
                     .buttonStyle(.bordered)
                 }
-
-                Button(intent: CancelDraftIntent()) {
-                    Text("Batal").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderless)
             }
             .padding()
         } else {
@@ -140,19 +132,6 @@ struct DraftSnippetView: View {
                 .foregroundStyle(.secondary)
                 .padding()
         }
-    }
-
-    /// Satu baris deskriptor terpenting: kategori (dengan sub) → merchant → catatan.
-    private func descriptor(of draft: TransactionDraft) -> (icon: String, text: String)? {
-        if !draft.categoryName.isEmpty {
-            let text = draft.subcategoryName.isEmpty
-                ? draft.categoryName
-                : "\(draft.categoryName) › \(draft.subcategoryName)"
-            return ("tag", text)
-        }
-        if !draft.merchant.isEmpty { return ("storefront", draft.merchant) }
-        if !draft.note.isEmpty { return ("text.alignleft", draft.note) }
-        return nil
     }
 
     private func row(_ icon: String, _ text: String) -> some View {
