@@ -114,9 +114,10 @@
 				};
 			};
 			buildConfigurationList = A6121A032FF56CB500815F96 /* Build configuration list for PBXProject "AkhnaFin" */;
-			developmentRegion = en;
+			developmentRegion = id;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				id,
 				en,
 				Base,
 			);
