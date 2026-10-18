@@ -10,11 +10,9 @@ import AkhnaFinCore
 @main
 struct AkhnaFinApp: App {
     private let container: ModelContainer
-    private let dependencies: AppDependencies
 
     init() {
         container = AppContainer.shared
-        dependencies = AppContainer.dependencies
         #if DEBUG
         seedDemoDataIfRequested()
         #endif
@@ -72,7 +70,7 @@ struct AkhnaFinApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(dependencies: dependencies)
+            RootView()
         }
         .modelContainer(container)
     }
