@@ -112,17 +112,7 @@ struct DebtDetailView: View {
             Button("Lunasi") { settle() }
             Button("Batal", role: .cancel) {}
         }
-        .alert(
-            "Gagal",
-            isPresented: Binding(
-                get: { actionError != nil },
-                set: { if !$0 { actionError = nil } }
-            )
-        ) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(actionError ?? "")
-        }
+        .errorAlert("Gagal", message: $actionError)
     }
 
     private var progressValue: Double {

@@ -80,17 +80,7 @@ struct DebtFormView: View {
                         .disabled(principal <= 0 || trimmedCounterparty.isEmpty)
                 }
             }
-            .alert(
-                "Gagal menyimpan",
-                isPresented: Binding(
-                    get: { saveError != nil },
-                    set: { if !$0 { saveError = nil } }
-                )
-            ) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(saveError ?? "")
-            }
+            .errorAlert("Gagal menyimpan", message: $saveError)
         }
     }
 

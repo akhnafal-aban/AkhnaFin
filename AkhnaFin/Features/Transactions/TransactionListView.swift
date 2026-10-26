@@ -150,23 +150,11 @@ struct TransactionListView: View {
                     locationService: locationService
                 )
             }
-            .alert(
-                "Gagal membaca resi",
-                isPresented: Binding(
-                    get: { receiptError != nil },
-                    set: { if !$0 { receiptError = nil } }
-                )
-            ) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(receiptError ?? "")
-            }
+            .errorAlert("Gagal membaca resi", message: $receiptError)
             .sheet(item: $editingTransaction) { transaction in
                 TransactionFormView(mode: .edit(transaction), repository: repository)
             }
-            .alert("Gagal menghapus transaksi", isPresented: $deleteFailed) {
-                Button("OK", role: .cancel) {}
-            }
+            .errorAlert("Gagal menghapus transaksi", isPresented: $deleteFailed)
             .overlay {
                 if transactions.isEmpty {
                     ContentUnavailableView(

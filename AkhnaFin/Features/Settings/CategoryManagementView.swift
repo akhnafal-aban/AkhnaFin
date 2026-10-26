@@ -33,11 +33,7 @@ struct CategoryManagementView: View {
         .sheet(item: $editorMode) { mode in
             CategoryEditView(mode: mode, repository: repository)
         }
-        .alert("Tidak bisa menghapus", isPresented: Binding(
-            get: { deleteError != nil }, set: { if !$0 { deleteError = nil } }
-        )) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(deleteError ?? "") }
+        .errorAlert("Tidak bisa menghapus", message: $deleteError)
     }
 
     private func section(for kind: TransactionType, title: String) -> some View {

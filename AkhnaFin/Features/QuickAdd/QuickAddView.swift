@@ -81,17 +81,7 @@ struct QuickAddView: View {
                 .disabled(trimmedInput.isEmpty || isParsing)
             }
         }
-        .alert(
-            "Gagal memproses",
-            isPresented: Binding(
-                get: { errorMessage != nil },
-                set: { if !$0 { errorMessage = nil } }
-            )
-        ) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(errorMessage ?? "")
-        }
+        .errorAlert("Gagal memproses", message: $errorMessage)
         .keyboardDismissable()
         .sheet(item: $pending) { pending in
             TransactionFormView(
