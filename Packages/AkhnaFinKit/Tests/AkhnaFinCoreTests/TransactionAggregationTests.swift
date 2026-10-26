@@ -2,7 +2,6 @@ import Testing
 import Foundation
 @testable import AkhnaFinCore
 
-/// Kalender deterministik untuk test: locale id_ID (Senin awal minggu), zona WIB.
 private func idCalendar() -> Calendar {
     var calendar = Calendar(identifier: .gregorian)
     calendar.locale = Locale(identifier: "id_ID")
@@ -30,7 +29,6 @@ struct StatsPeriodTests {
 
     @Test("Interval minggu: Senin 00:00 s.d. Senin berikutnya (id_ID)")
     func weekInterval() {
-        // 15 Jul 2026 = Rabu → minggu berjalan Senin 13 Jul s.d. Senin 20 Jul.
         let interval = StatsPeriod.week.interval(containing: date(2026, 7, 15), calendar: calendar)
         #expect(interval.start == date(2026, 7, 13, hour: 0))
         #expect(interval.end == date(2026, 7, 20, hour: 0))

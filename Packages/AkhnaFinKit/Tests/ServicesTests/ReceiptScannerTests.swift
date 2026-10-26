@@ -6,8 +6,6 @@ import ImageIO
 import UniformTypeIdentifiers
 @testable import Services
 
-/// Uji OCR TANPA fixture binary: resi sintetis dirender ke PNG via CoreGraphics/
-/// CoreText di dalam test, lalu dibaca balik oleh VisionReceiptScanner.
 @Suite("VisionReceiptScanner — OCR resi sintetis")
 struct ReceiptScannerTests {
     @Test("Teks kunci resi terekstrak dari gambar", .timeLimit(.minutes(2)))
@@ -56,7 +54,6 @@ struct ReceiptScannerTests {
                     CGColor(red: 0, green: 0, blue: 0, alpha: 1),
             ])
             let ctLine = CTLineCreateWithAttributedString(attributed)
-            // CoreGraphics origin kiri-bawah: baris ke-0 digambar paling atas.
             context.textPosition = CGPoint(x: 40, y: height - 60 - index * lineHeight)
             CTLineDraw(ctLine, context)
         }

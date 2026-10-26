@@ -2,16 +2,7 @@ import Foundation
 import AkhnaFinCore
 import ServiceInterfaces
 
-/// Ekstraktor resi deterministik (aturan, bukan LLM).
-///
-/// KEPUTUSAN DESAIN: Foundation Models menolak SEMUA prompt yang mengandung teks
-/// Indonesia (`unsupportedLanguageOrLocale`, terverifikasi empiris — bahkan bila
-/// dibungkus instruksi English). Resi toko Indonesia pasti berisi kata Indonesia,
-/// jadi jalur LLM mustahil untuk resi. Domain resi sempit & berstruktur (baris
-/// TOTAL + angka) sehingga aturan justru lebih andal: deterministik, instan,
-/// jalan tanpa Apple Intelligence, dan sepenuhnya unit-testable.
 enum ReceiptHeuristics {
-    /// Ekstrak draft dari teks OCR; `nil` bila tidak ada nominal total yang ditemukan.
     static func draft(from ocrText: String, now: Date = .now) -> TransactionDraft? {
         let lines = ocrText
             .split(whereSeparator: \.isNewline)
@@ -34,10 +25,6 @@ enum ReceiptHeuristics {
 
     // MARK: - Total
 
-    /// Prioritas keyword: GRAND TOTAL > TOTAL (bukan subtotal) > JUMLAH = NOMINAL >
-    /// PEMBAYARAN = TAGIHAN. Pada keyword sama, ambil kemunculan terakhir.
-    /// `nominal`/`pembayaran` mencakup e-receipt app pembayaran (Livin, SeaBank,
-    /// ShopeePay, Shopee) yang tak memakai kata "TOTAL" klasik.
     private static let totalKeywords: [(pattern: String, score: Int)] = [
         ("grand\\s*total", 4),
         ("(?<!sub[\\s-])total", 3),
@@ -47,13 +34,9 @@ enum ReceiptHeuristics {
         ("tagihan", 1),
     ]
 
-    /// Baris yang TIDAK boleh dianggap total: subtotal, biaya/admin, potongan,
-    /// promo/poin/cashback, kembalian/tunai. Mencegah salah ambil pada e-receipt
-    /// (mis. "Biaya Transaksi", "+ Rp100 Saldo", banner promo "Rp1.000.000").
     private static let excludeFromTotalPattern =
         "sub\\s*total|biaya|admin|sisa|saldo|poin|promo|cashback|reward|kembali|tunai"
 
-    /// Skor keyword tertinggi untuk sebuah baris (nil bila bukan baris total).
     private static func keywordScore(_ lower: String) -> Int? {
         for (pattern, score) in totalKeywords
         where lower.range(of: pattern, options: .regularExpression) != nil {
@@ -68,8 +51,6 @@ enum ReceiptHeuristics {
             let lower = line.lowercased()
             guard lower.range(of: excludeFromTotalPattern, options: .regularExpression) == nil,
                   let score = keywordScore(lower) else { continue }
-            // Nominal bisa sebaris dengan keyword (struk toko) ATAU di baris
-            // berikutnya (e-receipt 2 kolom: label kiri, angka kanan → OCR pisah baris).
             guard let amount = amount(in: line) ?? lookaheadAmount(lines, after: index),
                   amount > 0 else { continue }
             if best == nil || score > best!.score || (score == best!.score && index > best!.index) {
@@ -77,12 +58,9 @@ enum ReceiptHeuristics {
             }
         }
         if let best { return best.amount }
-        // Fallback e-receipt tanpa keyword total (mis. ShopeePay "-Rp87.800"):
-        // nominal ber-prefix "Rp" paling atas = headline transaksi.
         return headlineAmount(in: lines)
     }
 
-    /// Angka pada 1–2 baris non-kosong sesudah `index` (e-receipt kolom terpisah).
     private static func lookaheadAmount(_ lines: [String], after index: Int) -> Decimal? {
         for offset in 1...2 {
             let next = index + offset
@@ -92,8 +70,6 @@ enum ReceiptHeuristics {
         return nil
     }
 
-    /// Nominal ber-prefix "Rp" pertama dari atas, lewati baris promo/saldo/biaya.
-    /// Prefix "Rp" wajib agar tak salah ambil nomor rekening/PAN/ref/terminal.
     private static func headlineAmount(in lines: [String]) -> Decimal? {
         for line in lines {
             let lower = line.lowercased()
@@ -105,9 +81,6 @@ enum ReceiptHeuristics {
         return nil
     }
 
-    /// Angka nominal di akhir baris. Dua bentuk: bertitik ribuan "121.148" /
-    /// "30.000,50" (prefix Rp opsional, trailing `,-`/`-` opsional), ATAU
-    /// digit polos tanpa pemisah "25000" (struk thermal/POS digital).
     private static let amountPattern =
         "(?:rp\\.?\\s*)?([0-9]{1,3}(?:[.,][0-9]{3})+(?:,[0-9]{1,2})?|[0-9]{3,9}(?:,[0-9]{1,2})?)[\\s,\\-]*$"
 
@@ -119,7 +92,6 @@ enum ReceiptHeuristics {
         var digits = String(line[match])
             .replacingOccurrences(of: "(?i)rp\\.?\\s*", with: "", options: .regularExpression)
             .trimmingCharacters(in: CharacterSet(charactersIn: " ,-"))
-        // Koma terakhir diikuti 1–2 digit = desimal; sisanya pemisah ribuan.
         if let commaRange = digits.range(of: ",[0-9]{1,2}$", options: .regularExpression) {
             let decimalPart = digits[commaRange].replacingOccurrences(of: ",", with: ".")
             digits = digits[..<commaRange.lowerBound]
@@ -135,19 +107,14 @@ enum ReceiptHeuristics {
 
     // MARK: - Merchant & item
 
-    /// Label penerima pada e-receipt (baris label berdiri sendiri, nilai di baris
-    /// berikutnya — layout 2 kolom dipisah OCR). "Dari"/"Sumber Dana" sengaja
-    /// TIDAK ada di sini (itu pengirim, bukan merchant).
     private static let merchantLabels: Set<String> = [
         "ke", "bayar ke", "penerima", "merchant", "tujuan", "kepada",
     ]
 
-    /// Kata header/status yang bukan nama merchant (untuk fallback baris-atas).
     private static let merchantNoisePattern =
         "\\b(hasil|pembayaran|transfer|berhasil|sukses|success|rincian|transaction|details?|struk|receipt|resi|diterima|summary)\\b"
 
     private static func merchantName(in lines: [String]) -> String {
-        // 1) E-receipt: label eksplisit → nilai = baris berikutnya yang tampak nama.
         for (index, line) in lines.enumerated() {
             let key = line.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: " :"))
             guard merchantLabels.contains(key) else { continue }
@@ -155,7 +122,6 @@ enum ReceiptHeuristics {
                 return candidate
             }
         }
-        // 2) Struk toko: baris teratas yang tampak nama (skip header/status app).
         for line in lines.prefix(4) {
             guard line.lowercased().range(of: merchantNoisePattern, options: .regularExpression) == nil,
                   isNameLike(line) else { continue }
@@ -164,18 +130,15 @@ enum ReceiptHeuristics {
         return ""
     }
 
-    /// Nama plausible: cukup banyak huruf, bukan nomor rekening/ref (deret ≥7 digit).
     private static func isNameLike(_ line: String) -> Bool {
         let letters = line.filter(\.isLetter).count
         guard letters >= 3, letters * 2 >= line.count else { return false }
         return line.range(of: "[0-9]{7,}", options: .regularExpression) == nil
     }
 
-    /// Baris ringkasan pembayaran/pajak — bukan item belanjaan.
     private static let nonItemPattern =
         "sub\\s*total|total|jumlah|tagihan|ppn|pajak|diskon|discount|tunai|kembali|cash|change|debit|kredit|qris|dpp"
 
-    /// Baris item: ada huruf + diakhiri angka (harga), sebelum baris total; nama tanpa harga.
     private static func itemsSummary(in lines: [String], maxItems: Int = 6) -> String {
         var items: [String] = []
         for line in lines.dropFirst() {

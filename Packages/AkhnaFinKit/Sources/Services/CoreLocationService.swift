@@ -5,12 +5,6 @@ import ServiceInterfaces
 
 private let locationLog = Logger(subsystem: "com.aban.AkhnaFin", category: "Location")
 
-/// One-shot capture lokasi + reverse-geocode nama tempat, dibungkus async.
-///
-/// Kontrak `LocationCapturing`: TAK PERNAH melempar — gagal/izin ditolak/timeout
-/// → `nil`, sehingga penyimpanan transaksi tidak ikut gagal. Pakai
-/// `CLLocationManager.requestLocation()` (satu fix lalu berhenti) + delegate
-/// dijembatani ke `CheckedContinuation`.
 @MainActor
 public final class CoreLocationService: NSObject, LocationCapturing {
     private let manager = CLLocationManager()
@@ -45,16 +39,11 @@ public final class CoreLocationService: NSObject, LocationCapturing {
     private func requestOneShot() async -> CLLocation? {
         await withCheckedContinuation { (continuation: CheckedContinuation<CLLocation?, Never>) in
             self.continuation = continuation
-            // Belum ditentukan → minta izin dulu; delegate memicu requestLocation()
-            // setelah user memberi izin (atau finish(nil) bila ditolak).
-            // Sudah diizinkan → langsung minta lokasi.
             if manager.authorizationStatus == .notDetermined {
                 manager.requestWhenInUseAuthorization()
             } else {
                 manager.requestLocation()
             }
-            // Pagar waktu: apa pun yang lebih dulu (fix lokasi / gagal / timeout)
-            // memanggil finish(); yang belakangan jadi no-op.
             Task { @MainActor in
                 try? await Task.sleep(for: timeout)
                 finish(nil)
@@ -62,7 +51,6 @@ public final class CoreLocationService: NSObject, LocationCapturing {
         }
     }
 
-    /// Resume continuation SEKALI (idempotent).
     private func finish(_ location: CLLocation?) {
         guard let continuation else { return }
         self.continuation = nil
@@ -81,7 +69,6 @@ extension CoreLocationService: CLLocationManagerDelegate {
     public nonisolated func locationManager(
         _ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]
     ) {
-        // Salin nilai Sendable (koordinat) sebelum hop actor — jangan kirim CLLocation mentah.
         let coordinate = locations.last?.coordinate
         Task { @MainActor in
             finish(coordinate.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) })

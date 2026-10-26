@@ -1,10 +1,6 @@
 import Foundation
 import AkhnaFinCore
 
-/// Draft transaksi yang mengalir di pipeline `parse → draft (editable) → confirm → save`.
-///
-/// Tipe polos tanpa dependensi framework AI — implementasi parser (mis. Foundation
-/// Models dengan `@Generable`) hidup di target `Services` dan me-map hasilnya ke sini.
 public struct TransactionDraft: Sendable, Equatable, Codable {
     public var amount: Decimal
     public var currencyCode: String

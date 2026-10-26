@@ -1,8 +1,6 @@
 import Foundation
 import ServiceInterfaces
 
-/// Error granular jalur quick-log (intent/QuickAdd) — tiap kasus punya pesan
-/// siap-tampil sendiri, supaya dialog Siri/alert tidak generik (BUG-2).
 public enum QuickLogError: LocalizedError, Equatable, Sendable {
     case modelUnavailable(String)
     case parseFailed(String)
@@ -17,9 +15,6 @@ public enum QuickLogError: LocalizedError, Equatable, Sendable {
     }
 }
 
-/// Orkestrasi parse dengan pagar waktu — dipakai App Intent & QuickAdd.
-/// Berjalan di luar MainActor; hasil selalu `TransactionDraft` yang masih
-/// harus dikonfirmasi user sebelum commit.
 public struct QuickLogPipeline: Sendable {
     private let parser: any TransactionParsing
     private let scanner: (any ReceiptScanning)?
@@ -35,13 +30,11 @@ public struct QuickLogPipeline: Sendable {
         self.timeout = timeout
     }
 
-    /// Kalimat natural language → draft.
     public func parseDraft(from text: String) async throws -> TransactionDraft {
         let parser = self.parser
         return try await withTimeout { try await parser.parse(text) }
     }
 
-    /// Screenshot resi → OCR → draft (heuristik). Butuh `scanner` di init.
     public func parseReceiptDraft(fromImage imageData: Data) async throws -> TransactionDraft {
         guard let scanner else {
             throw QuickLogError.parseFailed("Scanner resi tidak terpasang.")
@@ -67,7 +60,6 @@ public struct QuickLogPipeline: Sendable {
                     throw QuickLogError.timedOut
                 }
                 defer { group.cancelAll() }
-                // Pemenang pertama: hasil operasi ATAU lemparan timeout.
                 return try await group.next()!
             }
         } catch let error as QuickLogError {

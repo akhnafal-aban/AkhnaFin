@@ -2,8 +2,6 @@ import Foundation
 import SwiftData
 import AkhnaFinCore
 
-/// Pintu tunggal operasi `DebtRecord` di atas `ModelContext` — pola yang sama
-/// dengan `TransactionRepository`. Read reaktif UI tetap via `@Query`.
 @MainActor
 public final class DebtRepository {
     public enum DebtError: LocalizedError, Equatable {
@@ -51,14 +49,10 @@ public final class DebtRepository {
         try context.save()
     }
 
-    /// Simpan mutasi langsung pada properti model (jalur edit).
     public func save() throws {
         try context.save()
     }
 
-    /// Semua record dengan urutan `DebtRecord.openFirstSorted` — belum lunas dulu
-    /// (terlambat paling atas). Sort di memory: status lunas dihitung, tak bisa
-    /// masuk predicate.
     public func fetchAll(now: Date = .now) throws -> [DebtRecord] {
         let all = try context.fetch(FetchDescriptor<DebtRecord>(
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
@@ -68,8 +62,6 @@ public final class DebtRepository {
 
     // MARK: - Cicilan
 
-    /// Catat satu cicilan. Nominal wajib > 0; boleh melebihi sisa (overpay
-    /// di-clamp di `remaining`, kejadian nyata: bayar bulat).
     @discardableResult
     public func addPayment(
         _ amount: Decimal,
@@ -85,8 +77,6 @@ public final class DebtRepository {
         return payment
     }
 
-    /// Lunasi = tambah pembayaran sebesar SISA (satu mekanisme dengan cicilan).
-    /// No-op bila sudah lunas.
     public func settle(_ record: DebtRecord, date: Date = .now) throws {
         guard !record.isSettled else { return }
         try addPayment(record.remaining, to: record, date: date, note: "Pelunasan")

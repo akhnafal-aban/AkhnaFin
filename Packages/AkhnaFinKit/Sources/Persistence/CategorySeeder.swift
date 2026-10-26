@@ -2,7 +2,6 @@ import Foundation
 import SwiftData
 import AkhnaFinCore
 
-/// Seed kategori bawaan — idempotent: hanya berjalan bila store belum punya kategori sama sekali.
 public enum CategorySeeder {
     public static func seedIfNeeded(context: ModelContext) throws {
         guard try context.fetchCount(FetchDescriptor<TransactionCategory>()) == 0 else { return }
@@ -26,11 +25,6 @@ public enum CategorySeeder {
         try context.save()
     }
 
-    /// Menyatukan kategori duplikat hasil race seeding multi-device: tiap device
-    /// men-seed lokal sebelum import CloudKit device lain tiba, sehingga built-in
-    /// bisa dobel. Dipanggil tiap launch; pemenang dipilih deterministik (UUID
-    /// terkecil) agar semua device konvergen ke record yang sama, transaksi &
-    /// subkategori milik duplikat dipindahkan dulu sebelum dihapus.
     public static func dedupeIfNeeded(context: ModelContext) throws {
         let all = try context.fetch(FetchDescriptor<TransactionCategory>())
         let grouped = Dictionary(grouping: all) { dedupeKey(for: $0) }

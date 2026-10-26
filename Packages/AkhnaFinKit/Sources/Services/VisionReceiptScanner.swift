@@ -6,9 +6,6 @@ import ServiceInterfaces
 private let ocrSignposter = OSSignposter(subsystem: "com.aban.AkhnaFin", category: "Parser")
 private let ocrLog = Logger(subsystem: "com.aban.AkhnaFin", category: "Parser")
 
-/// OCR resi berbasis Vision `RecognizeDocumentsRequest` (iOS 26/macOS 26) —
-/// struktur dokumen (baris/tabel) lebih akurat untuk resi daripada OCR polos.
-/// Teks mentah diteruskan ke parser resi; validasi isi terjadi di pipeline.
 public struct VisionReceiptScanner: ReceiptScanning {
     public init() {}
 

@@ -4,10 +4,6 @@ import AkhnaFinCore
 import ServiceInterfaces
 @testable import Services
 
-/// Eval kualitas parser dgn model SUNGGUHAN (BUG-1a — kualitas harus terukur).
-/// Hanya jalan bila host punya Apple Intelligence aktif (Mac M-series);
-/// di CI/simulator otomatis ter-skip. Jalankan lokal:
-/// `DEVELOPER_DIR=... swift test --filter ParserLiveEvalTests`
 @Suite(
     "Parser live eval (butuh Apple Intelligence host)",
     .enabled(if: FoundationModelsParser(categoryNames: [], subcategoryNames: []).availability == .available)
@@ -17,7 +13,6 @@ struct ParserLiveEvalTests {
         let text: String
         let amount: Decimal
         let type: TransactionType
-        /// Kategori/subkategori yang diharapkan (nil = tak dinilai).
         let category: String?
     }
 
@@ -79,7 +74,6 @@ struct ParserLiveEvalTests {
         print("=== PARSER EVAL === amount \(amountHits)/\(n) (\(Int(amountAcc * 100))%), type \(typeHits)/\(n) (\(Int(typeAcc * 100))%), category \(categoryHits)/\(categoryTotal) (\(Int(catAcc * 100))%)")
         failures.forEach { print("  MISS: \($0)") }
 
-        // Target PLAN-001 A4: amount & type ≥90%. Kategori dilaporkan (informatif).
         #expect(amountAcc >= 0.9, "akurasi amount \(Int(amountAcc * 100))% < 90%")
         #expect(typeAcc >= 0.9, "akurasi type \(Int(typeAcc * 100))% < 90%")
     }

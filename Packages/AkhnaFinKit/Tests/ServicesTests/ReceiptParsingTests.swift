@@ -4,7 +4,6 @@ import AkhnaFinCore
 import ServiceInterfaces
 @testable import Services
 
-/// Parser resi = heuristik deterministik → uji penuh TANPA model/Apple Intelligence.
 @Suite("Parser resi — heuristik deterministik")
 struct ReceiptParsingTests {
     private let parser = FoundationModelsParser(categoryNames: [], subcategoryNames: [])
@@ -61,10 +60,6 @@ struct ReceiptParsingTests {
         #expect(draft.note == "Nasi Goreng, Es Teh")
     }
 
-    /// E-receipt app pembayaran: layout 2 kolom → OCR (RecognizeDocuments)
-    /// memisah label & nominal ke baris berbeda. Transcript di bawah = hasil OCR
-    /// nyata yang terobservasi (lihat commit fix). Label "Total" klasik sering
-    /// absen — dipakai "Nominal"/"Jumlah"/"Pembayaran" atau headline "Rp".
     private static let eReceipts: [(name: String, ocr: String, total: Decimal)] = [
         ("Livin",     "Total Transaksi\nRp 225.000",                                     225000),
         ("Transfer",  "Nominal\nRp 3.000",                                                 3000),
@@ -84,7 +79,6 @@ struct ReceiptParsingTests {
 
     @Test("Baris promo/saldo tidak salah jadi total (ShopeePay banner)")
     func promoNotMistakenForTotal() async throws {
-        // Banner promo "Rp1.000.000" & "+ Rp100 Saldo" tak boleh menang atas 87.800.
         let draft = try await parser.parseReceipt(
             text: "Rincian Pembayaran\n-Rp87.800\nDapat Saldo Rp1.000.000\n+ Rp100 Saldo ShopeePay"
         )
@@ -102,10 +96,8 @@ struct ReceiptParsingTests {
 
     @Test("Nominal tanpa pemisah ribuan & trailing Rp/,- (struk thermal/POS)")
     func plainDigitsAndTrailing() async throws {
-        // Tanpa titik ribuan.
         #expect(try await parser.parseReceipt(text: "TOKO X\nTOTAL 25000").amount == 25000)
         #expect(try await parser.parseReceipt(text: "TOKO Y\nTOTAL: 5000").amount == 5000)
-        // Trailing ",-" gaya Indonesia.
         #expect(try await parser.parseReceipt(text: "TOKO Z\nTOTAL Rp30.000,-").amount == 30000)
         #expect(try await parser.parseReceipt(text: "TOKO W\nGRAND TOTAL 125000 ,-").amount == 125000)
     }
@@ -118,7 +110,6 @@ struct ReceiptParsingTests {
     }
 
     // MARK: - E-resi nyata (transkrip OCR dari screenshot user: SeaBank, ShopeePay,
-    // Livin' QRIS, Livin' transfer, app referral)
 
     private struct EReceiptCase: Sendable {
         let name: String

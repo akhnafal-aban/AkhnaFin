@@ -41,7 +41,6 @@ struct QuickLogPipelineTests {
             parser: MockTransactionParser(),
             scanner: MockReceiptScanner(text: ocr)
         )
-        // MockTransactionParser.parseReceipt delegasi ke parse → rawInput = teks OCR.
         let draft = try await pipeline.parseReceiptDraft(fromImage: Data())
         #expect(draft.rawInput == ocr)
 

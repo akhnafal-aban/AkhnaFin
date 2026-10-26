@@ -6,10 +6,6 @@ import ServiceInterfaces
 
 private let persistenceSignposter = OSSignposter(subsystem: "com.aban.AkhnaFin", category: "Persistence")
 
-/// Pintu tunggal operasi tulis/baca `MoneyTransaction` di atas `ModelContext`.
-///
-/// Read reaktif untuk UI tetap lewat `@Query` di View (MVVM hybrid); repository ini
-/// dipakai ViewModel/intent untuk commit draft, CRUD, dan query non-reaktif.
 @MainActor
 public final class TransactionRepository {
     private let context: ModelContext
@@ -30,7 +26,6 @@ public final class TransactionRepository {
         try context.save()
     }
 
-    /// Simpan mutasi yang dilakukan langsung pada properti model.
     public func save() throws {
         try context.save()
     }
@@ -54,8 +49,6 @@ public final class TransactionRepository {
 
     // MARK: - Commit draft (muara pipeline capture)
 
-    /// Ubah draft hasil parsing menjadi `MoneyTransaction` tersimpan;
-    /// lokasi & gambar resi opsional ditempelkan di sini.
     @discardableResult
     public func commit(
         _ draft: TransactionDraft,
@@ -117,7 +110,6 @@ public final class TransactionRepository {
     ) throws -> TransactionCategory {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw CategoryError.emptyName }
-        // Subkategori mewarisi jenis induknya (konsistensi hierarki).
         let category = TransactionCategory(
             name: trimmed, iconName: iconName, colorHex: colorHex,
             kind: parent?.kind ?? kind, isBuiltIn: false, parent: parent
@@ -141,9 +133,6 @@ public final class TransactionRepository {
         try context.save()
     }
 
-    /// Hapus kategori CUSTOM. Bawaan dilindungi (seeder akan menambahkannya lagi →
-    /// membingungkan). Transaksi & subkategori yang menunjuk ke sini ter-nullify
-    /// otomatis (deleteRule .nullify di model) — subkategori jadi level teratas.
     public func deleteCategory(_ category: TransactionCategory) throws {
         guard !category.isBuiltIn else { throw CategoryError.builtInNotDeletable }
         context.delete(category)
@@ -152,7 +141,6 @@ public final class TransactionRepository {
 
     // MARK: - Resolusi kategori
 
-    /// Subkategori diprioritaskan; bila tidak ketemu, jatuh ke kategori utama.
     private func resolvedCategory(for draft: TransactionDraft) throws -> TransactionCategory? {
         if !draft.subcategoryName.isEmpty,
            let sub = try resolveCategory(named: draft.subcategoryName, kind: draft.type) {
@@ -161,8 +149,6 @@ public final class TransactionRepository {
         return try resolveCategory(named: draft.categoryName, kind: draft.type)
     }
 
-    /// Cari kategori dengan nama paling cocok: exact → prefix → contains
-    /// (case/diacritic-insensitive), kandidat se-`kind` diprioritaskan.
     public func resolveCategory(named name: String, kind: TransactionType) throws -> TransactionCategory? {
         guard !name.isEmpty else { return nil }
         let all = try context.fetch(FetchDescriptor<TransactionCategory>())

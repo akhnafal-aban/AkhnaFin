@@ -78,19 +78,16 @@ struct PersistenceTests {
         let context = try makeContext()
         let repository = TransactionRepository(context: context)
 
-        // Tambah induk + subkategori (mewarisi kind induk).
         let lifestyle = try repository.addCategory(name: "Hobi", iconName: "star", kind: .expense)
         let sub = try repository.addCategory(name: "Fotografi", kind: .income, parent: lifestyle)
         #expect(sub.parent?.name == "Hobi")
         #expect(sub.kind == .expense, "subkategori mewarisi kind induk, bukan argumen")
         #expect(try repository.fetchCategories().count == 2)
 
-        // Edit.
         try repository.updateCategory(lifestyle, name: "Hobi & Seni", iconName: "paintbrush", colorHex: "#111")
         #expect(lifestyle.name == "Hobi & Seni")
         #expect(lifestyle.iconName == "paintbrush")
 
-        // Transaksi menunjuk kategori custom → nullify saat kategori dihapus.
         let tx = MoneyTransaction(amount: 1000, category: sub)
         context.insert(tx)
         try context.save()
@@ -147,7 +144,6 @@ struct PersistenceTests {
         let context = try makeContext()
         try CategorySeeder.seedIfNeeded(context: context)
 
-        // Simulasi race seeding multi-device: set built-in kedua ter-import dari CloudKit.
         let duplicateMainFood = TransactionCategory(name: "Main Food", kind: .expense, isBuiltIn: true)
         context.insert(duplicateMainFood)
         let tx = MoneyTransaction(amount: 20000, category: duplicateMainFood)
@@ -159,10 +155,8 @@ struct PersistenceTests {
         let all = try context.fetch(FetchDescriptor<TransactionCategory>())
         #expect(all.filter { $0.name == "Main Food" }.count == 1)
         #expect(all.count == 10)
-        // Transaksi milik duplikat berpindah ke kategori pemenang, bukan jadi nil.
         #expect(tx.category?.name == "Main Food")
 
-        // Idempotent: run kedua tidak mengubah apa pun.
         try CategorySeeder.dedupeIfNeeded(context: context)
         #expect(try context.fetch(FetchDescriptor<TransactionCategory>()).count == 10)
     }

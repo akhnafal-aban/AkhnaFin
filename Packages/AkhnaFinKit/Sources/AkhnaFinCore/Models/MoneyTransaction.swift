@@ -1,11 +1,6 @@
 import Foundation
 import SwiftData
 
-/// Satu transaksi keuangan (pengeluaran / pemasukan / transfer).
-///
-/// CloudKit-compatible: setiap atribut punya default value atau optional, relasi
-/// `category` optional (inverse didefinisikan di `TransactionCategory.transactions`),
-/// dan tidak ada `@Attribute(.unique)`.
 @Model
 public final class MoneyTransaction {
     public var id: UUID = UUID()
@@ -15,9 +10,7 @@ public final class MoneyTransaction {
     public var date: Date = Date.now
     public var note: String = ""
     public var merchant: String = ""
-    /// Jalur input asal transaksi dibuat.
     public var source: EntrySource = EntrySource.manual
-    /// Teks/ucapan asli sebelum di-parse (untuk audit & perbaikan parsing).
     public var rawInput: String = ""
     public var createdAt: Date = Date.now
 
@@ -29,7 +22,6 @@ public final class MoneyTransaction {
     @Attribute(.externalStorage)
     public var receiptImageData: Data?
 
-    /// Kategori transaksi. CloudKit: optional; inverse ada di `TransactionCategory.transactions`.
     public var category: TransactionCategory?
 
     public init(

@@ -1,7 +1,5 @@
 import Foundation
 
-/// Pengelompokan transaksi per hari untuk section daftar (baseline iOS 26 —
-/// diganti SwiftData sectioned fetch saat adopsi iOS 27).
 public enum TransactionGrouping {
     public static func groupByDay(
         _ transactions: [MoneyTransaction],

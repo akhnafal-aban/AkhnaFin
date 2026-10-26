@@ -7,10 +7,6 @@ import ServiceInterfaces
 private let parserLog = Logger(subsystem: "com.aban.AkhnaFin", category: "Parser")
 private let parserSignposter = OSSignposter(subsystem: "com.aban.AkhnaFin", category: "Parser")
 
-/// Skema terstruktur yang dihasilkan model on-device (guided generation).
-///
-/// Dipisah dari `TransactionDraft` agar `ServiceInterfaces` tetap bebas dependensi
-/// framework AI — mapping ke draft dilakukan di `draft(rawInput:now:calendar:)`.
 @Generable
 struct ParsedTransaction {
     @Guide(description: "Transaction amount in full Rupiah. k = thousand, m/jt = million. Example: '20k' = 20000, '1.5m' = 1500000")
@@ -34,8 +30,6 @@ struct ParsedTransaction {
     @Guide(description: "Matching subcategory name from the list in the instructions if any; empty string otherwise")
     var subcategoryName: String
 
-    // Macro @Generable menambahkan init(_:) sehingga memberwise init implisit hilang —
-    // init eksplisit ini dipakai unit test mapper.
     init(
         amount: Double,
         type: String,
@@ -56,7 +50,6 @@ struct ParsedTransaction {
 }
 
 extension ParsedTransaction {
-    /// Mapping murni (tanpa model) ke `TransactionDraft` — unit-testable.
     func draft(rawInput: String, now: Date = .now, calendar: Calendar = .current) -> TransactionDraft {
         let daysBack = max(0, daysAgo)
         let date = calendar.date(byAdding: .day, value: -daysBack, to: now) ?? now
@@ -73,8 +66,6 @@ extension ParsedTransaction {
     }
 }
 
-/// Double → Decimal dibulatkan 2 digit (hindari artefak floating-point), minimum 0.
-/// Dipakai mapper kalimat & resi — satu sumber kebenaran.
 func sanitizedRupiah(_ amount: Double) -> Decimal {
     var value = Decimal(max(0, amount))
     var rounded = Decimal()
@@ -83,10 +74,6 @@ func sanitizedRupiah(_ amount: Double) -> Decimal {
 }
 
 
-/// Parser natural language berbasis Foundation Models (on-device, iOS 26+).
-///
-/// Tanpa heuristic fallback: bila model tidak tersedia, `availability` menjelaskan
-/// alasannya dan `parse` melempar — UI menampilkan graceful state.
 public struct FoundationModelsParser: TransactionParsing {
     private let categoryNames: [String]
     private let subcategoryNames: [String]
@@ -112,13 +99,10 @@ public struct FoundationModelsParser: TransactionParsing {
             }
             throw TransactionParsingError.modelUnavailable("Model tidak tersedia.")
         }
-        // Session baru per permintaan: parsing bersifat stateless, transcript
-        // yang menumpuk hanya membengkakkan konteks.
         let session = LanguageModelSession(instructions: instructions)
         let interval = parserSignposter.beginInterval("parse")
         defer { parserSignposter.endInterval("parse", interval) }
         do {
-            // Greedy sampling: output deterministik — kualitas terukur & stabil (BUG-1a).
             let response = try await session.respond(
                 to: text,
                 generating: ParsedTransaction.self,
@@ -142,11 +126,6 @@ public struct FoundationModelsParser: TransactionParsing {
         return drafts
     }
 
-    /// Resi: mesin DETERMINISTIK (`ReceiptHeuristics`), bukan LLM — Foundation
-    /// Models menolak semua prompt berisi teks Indonesia (`unsupportedLanguage
-    /// OrLocale`, terverifikasi empiris, amplop English pun tidak lolos), dan
-    /// resi Indonesia pasti berisi kata Indonesia. Bonus: jalur ini bekerja
-    /// meski Apple Intelligence tidak tersedia.
     public func parseReceipt(text: String) async throws -> TransactionDraft {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -194,8 +173,6 @@ public struct FoundationModelsParser: TransactionParsing {
         """
     }
 
-    /// Glossary kategori seed: nama Indonesia + arti English agar model bisa
-    /// memetakan input English → nama kategori Indonesia (BUG-1a).
     private static let glossary: [String: String] = [
         "Main Food": "daily meals",
         "Lifestyle": "leisure & hobbies",

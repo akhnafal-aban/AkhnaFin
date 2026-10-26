@@ -61,7 +61,6 @@ struct ParsedTransactionMappingTests {
     func unavailableThrows() async {
         let parser = FoundationModelsParser(categoryNames: [], subcategoryNames: [])
         guard case .unavailable = parser.availability else {
-            // Host test punya Apple Intelligence aktif — jalur unavailable tak bisa diuji di sini.
             return
         }
         await #expect(throws: TransactionParsingError.self) {

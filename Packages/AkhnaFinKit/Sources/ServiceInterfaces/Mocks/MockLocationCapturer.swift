@@ -1,6 +1,5 @@
 import Foundation
 
-/// Penangkap lokasi palsu untuk unit test & SwiftUI Preview.
 public struct MockLocationCapturer: LocationCapturing {
     public var place: CapturedPlace?
 
