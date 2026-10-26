@@ -3,8 +3,6 @@ import SwiftData
 import AkhnaFinCore
 import Persistence
 
-/// Kelola kategori: daftar per jenis (induk + subkategori indent), tambah/edit/hapus.
-/// Read reaktif via `@Query`; mutasi lewat `TransactionRepository`.
 struct CategoryManagementView: View {
     let repository: TransactionRepository
 

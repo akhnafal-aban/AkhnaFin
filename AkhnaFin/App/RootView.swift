@@ -15,8 +15,6 @@ struct RootView: View {
 
     var body: some View {
         TabView {
-            // Tab "Catat Cepat" dihapus (keputusan Fase C): semua jalur capture
-            // pindah ke menu "+" di Transaksi (HIG pull-down button).
             Tab("Dashboard", systemImage: "chart.pie") {
                 DashboardView(debtRepository: dependencies.debtRepository)
             }
@@ -32,8 +30,6 @@ struct RootView: View {
                 SettingsView(repository: dependencies.repository)
             }
         }
-        // Jalur "Edit di App" dari snippet intent (A3): konsumsi draft handoff
-        // saat app aktif → sajikan layar konfirmasi prefilled.
         .onAppear(perform: consumeEditRequest)
         .onChange(of: scenePhase) {
             if scenePhase == .active { consumeEditRequest() }
@@ -49,8 +45,6 @@ struct RootView: View {
 
     private func consumeEditRequest() {
         guard let pending = PendingDraftStore.consumeEditRequest() else {
-            // Tanpa edit-request mungkin ADA konfirmasi Siri aktif — slot confirming
-            // jangan disentuh (menghapusnya = mencuri draft yang sedang dikonfirmasi).
             return
         }
         handoffDraft = HandoffDraft(
@@ -58,8 +52,6 @@ struct RootView: View {
             receiptImage: pending.receiptImage,
             source: pending.source
         )
-        // promoteStashToEditRequest sudah menyalin slot confirming ke edit-request,
-        // jadi aman membersihkannya sekarang.
         PendingDraftStore.clearStash()
     }
 }

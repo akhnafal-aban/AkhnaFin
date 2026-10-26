@@ -1,8 +1,6 @@
 import SwiftUI
 import AkhnaFinCore
 
-/// Picker kategori + subkategori. Caller menyuplai daftar (sudah difilter per jenis
-/// transaksi); subkategori ditampilkan dengan nama induknya.
 struct CategoryPicker: View {
     private let title: String
     private let categories: [TransactionCategory]

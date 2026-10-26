@@ -2,9 +2,6 @@
 //  AppDependencies.swift
 //  AkhnaFin
 //
-//  Composition root: merakit implementasi konkret di balik protokol AkhnaFinKit.
-//  Service berikutnya (speech, receipt, location) ditambahkan pada fasenya.
-//
 
 import SwiftData
 import AkhnaFinCore
@@ -25,7 +22,6 @@ final class AppDependencies {
         repository = TransactionRepository(context: context)
         debtRepository = DebtRepository(context: context)
 
-        // Nama kategori user disuntikkan ke instruksi parser agar saran kategorinya nyambung.
         let categories = (try? context.fetch(FetchDescriptor<TransactionCategory>())) ?? []
         parser = FoundationModelsParser(
             categoryNames: categories.filter { $0.parent == nil }.map(\.name),

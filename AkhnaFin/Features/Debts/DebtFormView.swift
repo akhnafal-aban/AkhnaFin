@@ -2,7 +2,6 @@ import SwiftUI
 import AkhnaFinCore
 import Persistence
 
-/// Form tambah/edit catatan hutang — pola state-dari-mode `TransactionFormView`.
 struct DebtFormView: View {
     enum Mode {
         case add

@@ -2,9 +2,6 @@
 //  DraftSummary.swift
 //  AkhnaFin
 //
-//  Ringkasan satu-baris draft untuk dialog Siri/Shortcuts — dipakai
-//  LogExpenseIntent & LogReceiptIntent (satu sumber).
-//
 
 import AkhnaFinCore
 import ServiceInterfaces

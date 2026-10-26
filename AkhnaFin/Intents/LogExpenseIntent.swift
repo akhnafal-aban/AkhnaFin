@@ -2,9 +2,6 @@
 //  LogExpenseIntent.swift
 //  AkhnaFin
 //
-//  Siri/Shortcuts/Spotlight/Action Button → catat transaksi dari satu kalimat.
-//  Wajib di app bundle. Hasil AI DIKONFIRMASI dulu sebelum commit (aturan pipeline).
-//
 
 import AppIntents
 import OSLog
@@ -19,7 +16,6 @@ struct LogExpenseIntent: AppIntent {
     static let description = IntentDescription(
         "Catat transaksi dari satu kalimat Bahasa Inggris, mis. \"buy meatballs 20k at the canteen\"."
     )
-    // Jalan di background (tanpa buka app); konfirmasi muncul sebagai prompt Siri/Shortcuts.
     static let openAppWhenRun = false
 
     @Parameter(
@@ -30,16 +26,12 @@ struct LogExpenseIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
-        // Container & wiring dibangun sekali per proses (BUG-2a) — bukan per invocation.
         let dependencies = AppContainer.dependencies
         intentLog.info("LogExpense mulai (\(text.count, privacy: .public) chars)")
 
-        // Parse dengan pagar waktu — error granular, tidak pernah stuck (BUG-2b).
-        // Gagal → lempar QuickLogError (LocalizedError): Siri menampilkan pesannya.
         let draft = try await QuickLogPipeline(parser: dependencies.parser).parseDraft(from: text)
         intentLog.info("LogExpense parse sukses")
 
-        // Snippet interaktif sebagai HASIL: tombol Simpan/Edit/Batal yang menutup.
         return stashAndPresentDraft(draft, source: .appIntent)
     }
 }

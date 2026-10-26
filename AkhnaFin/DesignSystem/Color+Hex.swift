@@ -1,7 +1,6 @@
 import SwiftUI
 
 extension Color {
-    /// Warna dari hex "#RRGGBB" / "RRGGBB". `nil` → warna aksen (fallback aman).
     init(hex: String?) {
         guard let hex, let rgb = Color.rgb(fromHex: hex) else {
             self = .accentColor

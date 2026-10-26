@@ -1,7 +1,6 @@
 import SwiftUI
 import AkhnaFinCore
 
-/// Satu baris transaksi di daftar: ikon kategori, judul, tempat, dan nominal.
 struct TransactionRow: View {
     private let transaction: MoneyTransaction
 

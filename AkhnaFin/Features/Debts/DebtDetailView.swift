@@ -2,7 +2,6 @@ import SwiftUI
 import AkhnaFinCore
 import Persistence
 
-/// Detail satu hutang: progres, riwayat cicilan, bayar/lunasi/edit.
 struct DebtDetailView: View {
     let record: DebtRecord
     let repository: DebtRepository
@@ -29,7 +28,6 @@ struct DebtDetailView: View {
                             .foregroundStyle(.green)
                             .font(.subheadline.weight(.semibold))
                     } else if record.isOverdue() {
-                        // HIG: jangan andalkan warna saja — ikon + teks.
                         Label("Terlambat", systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(.red)
                             .font(.subheadline.weight(.semibold))

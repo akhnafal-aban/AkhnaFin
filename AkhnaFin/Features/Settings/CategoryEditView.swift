@@ -2,8 +2,6 @@ import SwiftUI
 import AkhnaFinCore
 import Persistence
 
-/// Tambah/edit kategori. Jenis hanya bisa dipilih saat menambah kategori induk
-/// (subkategori mewarisi induk; edit tak mengubah jenis agar transaksi konsisten).
 struct CategoryEditView: View {
     enum Mode: Identifiable {
         case add(parent: TransactionCategory?, kind: TransactionType)
@@ -132,7 +130,6 @@ struct CategoryEditView: View {
         }
     }
 
-    // Subset SF Symbols relevan finansial + palet warna kategori seed.
     private static let iconChoices = [
         "tag", "fork.knife", "cup.and.saucer", "cart", "bag", "gift",
         "car", "fuelpump", "bus", "airplane", "house", "bolt",

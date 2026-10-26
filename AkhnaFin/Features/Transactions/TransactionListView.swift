@@ -6,11 +6,6 @@ import ServiceInterfaces
 import Services
 import Persistence
 
-/// Daftar transaksi: section per tanggal, pencarian, swipe edit/hapus.
-///
-/// Read reaktif lewat `@Query` (MVVM hybrid); mutasi lewat `TransactionRepository`.
-/// Toolbar "+" = HIG pull-down button: satu tombol dengan menu tiga jalur capture
-/// (Text Entry / Upload Resi / Manual) — menggantikan tab "Catat Cepat".
 struct TransactionListView: View {
     @Query(sort: \MoneyTransaction.date, order: .reverse) private var transactions: [MoneyTransaction]
     @State private var searchText = ""
@@ -18,7 +13,6 @@ struct TransactionListView: View {
     @State private var editingTransaction: MoneyTransaction?
     @State private var deleteFailed = false
 
-    // Jalur capture dari menu "+"
     @State private var isTextEntryPresented = false
     @State private var isReceiptPickerPresented = false
     @State private var receiptItem: PhotosPickerItem?
@@ -90,8 +84,6 @@ struct TransactionListView: View {
             .toolbarTitleDisplayMode(.inlineLarge)
             .searchable(text: $searchText, prompt: "Cari merchant, catatan, kategori")
             .toolbar {
-                // HIG pull-down button: aksi kreasi terkait dikonsolidasi di satu
-                // tombol; item prioritas tinggi (jalur tersering) di urutan atas.
                 Menu {
                     if parser != nil {
                         Button {
@@ -171,8 +163,6 @@ struct TransactionListView: View {
 
     // MARK: - Jalur Upload Resi
 
-    /// Foto galeri → Data → pipeline OCR+heuristik yang sama dgn Shortcut resi →
-    /// draft konfirmasi. Gagal → alert pesan siap-tampil dari `QuickLogError`.
     private func parseReceipt(from item: PhotosPickerItem) {
         guard let parser, let scanner, !isParsingReceipt else { return }
         isParsingReceipt = true
@@ -195,7 +185,6 @@ struct TransactionListView: View {
     }
 }
 
-/// Pembungkus Identifiable untuk sheet(item:) — draft resi + gambar aslinya.
 private struct ReceiptDraft: Identifiable {
     let id = UUID()
     let draft: TransactionDraft

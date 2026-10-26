@@ -2,10 +2,6 @@
 //  ConfirmExpenseSnippet.swift
 //  AkhnaFin
 //
-//  Snippet interaktif iOS 26: result snippet, BUKAN requestConfirmation.
-//  Modal menahan perform() di await sehingga tombol "Edit di App" tak bisa
-//  menutup snippet (bug device) — result snippet menutup benar.
-//
 
 import AppIntents
 import SwiftUI
@@ -18,8 +14,6 @@ private let snippetLog = Logger(subsystem: "com.aban.AkhnaFin", category: "Inten
 
 // MARK: - Tombol snippet (aksi)
 
-/// "Simpan": commit draft dari stash di background (tanpa buka app), lalu tutup
-/// snippet dengan dialog hasil.
 struct SaveDraftIntent: AppIntent {
     static let title: LocalizedStringResource = "Simpan Transaksi"
     static let isDiscoverable = false
@@ -43,9 +37,6 @@ struct SaveDraftIntent: AppIntent {
     }
 }
 
-/// "Edit di App": pindahkan draft ke slot handoff lalu buka app. Karena snippet
-/// ini result snippet (bukan modal), membuka app menutup snippet — RootView
-/// mendeteksi handoff dan menyajikan TransactionFormView (mode confirmDraft).
 struct EditExpenseInAppIntent: AppIntent {
     static let title: LocalizedStringResource = "Edit Draft di App"
     static let isDiscoverable = false
@@ -58,7 +49,6 @@ struct EditExpenseInAppIntent: AppIntent {
     }
 }
 
-/// "Batal": buang draft, tutup snippet.
 struct CancelDraftIntent: AppIntent {
     static let title: LocalizedStringResource = "Batalkan"
     static let isDiscoverable = false
@@ -72,8 +62,6 @@ struct CancelDraftIntent: AppIntent {
 
 // MARK: - Kartu snippet
 
-/// Kartu ringkas + tiga tombol. Sengaja minimalis (nominal + jenis + satu
-/// deskriptor + tanggal); detail penuh muncul di form setelah "Edit di App".
 struct DraftSnippetView: View {
     private var draft: TransactionDraft? { PendingDraftStore.currentStash() }
 
@@ -129,7 +117,6 @@ struct DraftSnippetView: View {
         }
     }
 
-    /// Satu baris deskriptor terpenting: kategori (dengan sub) → merchant → catatan.
     private func descriptor(of draft: TransactionDraft) -> (icon: String, text: String)? {
         if !draft.categoryName.isEmpty {
             let text = draft.subcategoryName.isEmpty

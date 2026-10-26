@@ -4,11 +4,6 @@ import Charts
 import AkhnaFinCore
 import Persistence
 
-/// Dashboard fase C: ringkasan periode + donut kategori + bar tren.
-///
-/// Layout FIXED (reorderable container = enhancement iOS 27). Read reaktif via
-/// `@Query`; agregasi murni di `TransactionAggregation` (Core) — View hanya
-/// memetakan hasilnya ke Swift Charts.
 struct DashboardView: View {
     @Query private var transactions: [MoneyTransaction]
     @Query private var debts: [DebtRecord]
@@ -16,16 +11,12 @@ struct DashboardView: View {
     @State private var period: StatsPeriod = .month
     @State private var interval: DateInterval = StatsPeriod.month.interval(containing: .now)
 
-    /// Untuk NavigationLink ke layar kelola hutang; nil = kartu Hutang disembunyikan
-    /// (Preview lama tetap jalan).
     private let debtRepository: DebtRepository?
 
     init(debtRepository: DebtRepository? = nil) {
         self.debtRepository = debtRepository
     }
 
-    /// Maksimal irisan donut bernama; sisanya digulung ke "Lainnya" (HIG chart:
-    /// 5–7 sektor agar terbaca).
     private static let maxSlices = 5
 
     var body: some View {
@@ -43,7 +34,6 @@ struct DashboardView: View {
                     )
                     .listRowBackground(Color.clear)
 
-                    // Hutang independen dari periode — tetap tampil saat periode kosong.
                     if let debtRepository {
                         Section("Hutang") {
                             debtCard(repository: debtRepository)
@@ -58,8 +48,6 @@ struct DashboardView: View {
                             categoryDonut
                         }
                     }
-                    // Hutang setelah Ringkasan (keputusan plan): outstanding =
-                    // kondisi saat ini, independen dari periode.
                     if let debtRepository {
                         Section("Hutang") {
                             debtCard(repository: debtRepository)
@@ -74,8 +62,6 @@ struct DashboardView: View {
             .navigationTitle("Dashboard")
             .toolbarTitleDisplayMode(.inlineLarge)
             .onChange(of: period) {
-                // Ganti granularitas → kembali ke periode yang memuat HARI INI
-                // (offset minggu-ke-3 tak bermakna setelah pindah ke Bulan).
                 interval = period.interval(containing: .now)
             }
         }
@@ -112,7 +98,6 @@ struct DashboardView: View {
                     Image(systemName: "chevron.forward")
                 }
                 .accessibilityLabel("Periode berikutnya")
-                // Jangan melangkah ke masa depan — data belum ada.
                 .disabled(interval.end > .now)
             }
             .buttonStyle(.borderless)
@@ -120,9 +105,7 @@ struct DashboardView: View {
         .padding(.vertical, 4)
     }
 
-    /// Label periode: minggu "13–19 Jul 2026", bulan "Juli 2026", tahun "2026".
     private var intervalLabel: String {
-        // `end` eksklusif → tampilkan hari terakhir inklusif.
         let lastDay = interval.end.addingTimeInterval(-1)
         switch period {
         case .week:
@@ -146,7 +129,6 @@ struct DashboardView: View {
         TransactionAggregation.totals(periodTransactions)
     }
 
-    /// Top-N kategori + gulung sisanya ke "Lainnya" (donut tetap terbaca).
     private var slices: [TransactionAggregation.CategorySlice] {
         let all = TransactionAggregation.expenseByCategory(periodTransactions)
         guard all.count > Self.maxSlices + 1 else { return all }
@@ -225,22 +207,17 @@ struct DashboardView: View {
                     angularInset: 1.5
                 )
                 .cornerRadius(4)
-                // Warna STATIS per sektor + legend manual: foregroundStyle(by:) +
-                // chartForegroundStyleScale crash di runtime (Charts nil unwrap, iOS 26.x).
                 .foregroundStyle(sliceColor(slice))
                 .accessibilityLabel(slice.name)
                 .accessibilityValue(CurrencyFormatter.string(from: slice.total))
             }
             .frame(minHeight: 200)
 
-            // Legend manual (pengganti chartLegend yang butuh scale kategorikal).
             FlowLegend(items: slices.map { ($0.name, sliceColor($0)) })
         }
         .padding(.vertical, 8)
     }
 
-    /// Warna irisan dari colorHex kategori; bucket tanpa warna → abu-abu
-    /// (bukan accent — accent menyesatkan seolah kategori istimewa).
     private func sliceColor(_ slice: TransactionAggregation.CategorySlice) -> Color {
         slice.colorHex.isEmpty ? Color.gray.opacity(0.55) : Color(hex: slice.colorHex)
     }
@@ -271,13 +248,11 @@ struct DashboardView: View {
         .padding(.vertical, 8)
     }
 
-    /// Decimal → Double untuk sumbu chart (Decimal bukan tipe plottable).
     private func doubleValue(_ decimal: Decimal) -> Double {
         NSDecimalNumber(decimal: decimal).doubleValue
     }
 }
 
-/// Legend manual donut: bulatan warna + nama, wrap ke baris baru.
 private struct FlowLegend: View {
     let items: [(name: String, color: Color)]
 

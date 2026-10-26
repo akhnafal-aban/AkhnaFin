@@ -4,9 +4,6 @@ import UIKit
 #endif
 
 extension View {
-    /// Keyboard selalu bisa ditutup (BUG-3): scroll menutup segera, tap di mana pun
-    /// menutup SAAT keyboard tampil (gated — tap saat keyboard tertutup tetap
-    /// memfokuskan field secara normal), plus tombol "Selesai" di atas keyboard.
     func keyboardDismissable() -> some View {
         modifier(KeyboardDismissable())
     }

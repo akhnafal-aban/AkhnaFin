@@ -1,8 +1,6 @@
 import SwiftUI
 
 extension View {
-    /// Alert satu pesan dari `Binding<String?>`: terisi = tampil, tombol OK
-    /// mengosongkan. Satu pola untuk semua form/daftar (8 call site).
     func errorAlert(_ title: String, message: Binding<String?>) -> some View {
         alert(
             title,
@@ -17,7 +15,6 @@ extension View {
         }
     }
 
-    /// Varian tanpa teks pesan untuk flag `Bool`.
     func errorAlert(_ title: String, isPresented: Binding<Bool>) -> some View {
         alert(title, isPresented: isPresented) {
             Button("OK", role: .cancel) {}

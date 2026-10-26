@@ -3,8 +3,6 @@ import SwiftData
 import AkhnaFinCore
 import Persistence
 
-/// Daftar hutang/piutang: belum lunas dulu (terlambat disorot), lalu lunas.
-/// Read reaktif `@Query`; mutasi lewat `DebtRepository` (pola proyek).
 struct DebtListView: View {
     @Query(sort: \DebtRecord.createdAt, order: .reverse) private var records: [DebtRecord]
     @State private var isAdding = false
@@ -82,7 +80,6 @@ struct DebtListView: View {
                     Text(record.counterparty)
                     HStack(spacing: 4) {
                         if record.isOverdue() {
-                            // Ikon + teks, bukan warna saja (HIG aksesibilitas).
                             Image(systemName: "exclamationmark.triangle.fill")
                             Text("Terlambat")
                         } else if let dueDate = record.dueDate, !record.isSettled {

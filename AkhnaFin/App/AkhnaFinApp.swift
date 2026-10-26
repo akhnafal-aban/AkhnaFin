@@ -21,9 +21,6 @@ struct AkhnaFinApp: App {
     }
 
     #if DEBUG
-    /// Data dummy untuk verifikasi visual di simulator (dashboard butuh isi;
-    /// simctl tak bisa tap). Aktif HANYA bila env `AKHNAFIN_DEMO_SEED=1` dan
-    /// store masih kosong — tak pernah menyentuh build Release.
     @MainActor
     private func seedDemoDataIfRequested() {
         guard ProcessInfo.processInfo.environment["AKHNAFIN_DEMO_SEED"] == "1" else { return }
@@ -42,7 +39,6 @@ struct AkhnaFinApp: App {
             )
             context.insert(transaction)
         }
-        // Hutang dummy: paylater terlambat, piutang teman, satu lunas.
         let paylater = DebtRecord(
             counterparty: "SPayLater", direction: .iOwe, principal: 750_000,
             dueDate: calendar.date(byAdding: .day, value: -3, to: .now)

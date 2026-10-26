@@ -4,9 +4,6 @@ import AkhnaFinCore
 import ServiceInterfaces
 import Persistence
 
-/// SATU form transaksi untuk tiga jalur (A5 — konsolidasi duplikasi):
-/// tambah manual, edit, dan konfirmasi draft hasil AI. Hasil AI TIDAK PERNAH
-/// tersimpan tanpa melewati layar ini (mode `.confirmDraft`).
 struct TransactionFormView: View {
     enum Mode {
         case add
@@ -19,8 +16,6 @@ struct TransactionFormView: View {
 
     private let mode: Mode
     private let repository: TransactionRepository
-    /// Untuk auto-capture lokasi senyap saat menyimpan transaksi BARU (nil = nonaktif,
-    /// mis. Preview/edit). Gating akhir tetap lewat `LocationPreference`.
     private let locationService: (any LocationCapturing)?
     private let onCommitted: () -> Void
 
@@ -134,7 +129,6 @@ struct TransactionFormView: View {
         if case .confirmDraft(let draft, _, _) = mode { draft.rawInput } else { "" }
     }
 
-    /// Preselect kategori dari saran parser — sekali saja (mode confirmDraft).
     private func resolveSuggestedCategoryOnce() {
         guard case .confirmDraft(let draft, _, _) = mode, !didResolveSuggestion else { return }
         didResolveSuggestion = true
@@ -166,8 +160,6 @@ struct TransactionFormView: View {
         }
     }
 
-    /// Auto-capture lokasi hanya untuk transaksi BARU (add/confirmDraft), bila
-    /// service terpasang & toggle "Rekam Lokasi" aktif. Edit tak menyentuh lokasi.
     private func capturePlaceIfNeeded() async -> CapturedPlace? {
         guard let locationService, LocationPreference.isEnabled else { return nil }
         switch mode {
@@ -200,7 +192,6 @@ struct TransactionFormView: View {
             try repository.save()
 
         case .confirmDraft(let draft, let source, let receiptImage):
-            // Draft final dari state hasil editan user — tetap lewat pipeline commit().
             var categoryName = ""
             var subcategoryName = ""
             if let category {

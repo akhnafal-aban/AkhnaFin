@@ -1,7 +1,6 @@
 import SwiftUI
 import AkhnaFinCore
 
-/// Input nominal uang dengan format mata uang (default Rupiah, locale `id_ID`).
 struct AmountField: View {
     private let title: String
     @Binding private var amount: Decimal

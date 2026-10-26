@@ -5,8 +5,6 @@ import ServiceInterfaces
 import Services
 import Persistence
 
-/// Catat cepat: ketik satu kalimat ("beli bakso 20k di kantin kantor") →
-/// parser on-device mengisi draft → user konfirmasi/edit → tersimpan.
 struct QuickAddView: View {
     private let parser: any TransactionParsing
     private let repository: TransactionRepository
@@ -44,8 +42,6 @@ struct QuickAddView: View {
                 }
             }
             .navigationTitle("Text Entry")
-            // Kini dipresentasikan sebagai sheet dari menu "+" (bukan tab) —
-            // sheet butuh affordance tutup eksplisit (HIG).
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Tutup") { dismiss() }
@@ -107,7 +103,6 @@ struct QuickAddView: View {
         let pipeline = QuickLogPipeline(parser: parser)
         Task {
             do {
-                // Pipeline yang sama dgn App Intent: pagar waktu + error granular.
                 let draft = try await pipeline.parseDraft(from: text)
                 pending = PendingDraft(draft: draft)
             } catch {
@@ -119,7 +114,6 @@ struct QuickAddView: View {
     }
 }
 
-/// Pembungkus Identifiable agar draft bisa dipresentasikan via sheet(item:).
 private struct PendingDraft: Identifiable {
     let id = UUID()
     let draft: TransactionDraft

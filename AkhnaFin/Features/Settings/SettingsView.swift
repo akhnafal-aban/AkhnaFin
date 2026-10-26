@@ -1,11 +1,9 @@
 import SwiftUI
 import Persistence
 
-/// Pengaturan: kelola kategori, rekam lokasi, status penyimpanan iCloud.
 struct SettingsView: View {
     let repository: TransactionRepository
 
-    /// Toggle auto-capture lokasi saat commit dalam-app (default ON — keputusan Fase 0).
     @AppStorage("recordLocation") private var recordLocation = true
 
     var body: some View {
