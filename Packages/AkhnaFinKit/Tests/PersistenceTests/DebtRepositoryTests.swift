@@ -68,16 +68,15 @@ struct DebtRepositoryTests {
         let now = Date.now
         let settled = try repository.create(counterparty: "Lunas", direction: .iOwe, principal: 10_000)
         try repository.settle(settled)
-        let dueSoon = try repository.create(
+        _ = try repository.create(
             counterparty: "DueSoon", direction: .iOwe, principal: 20_000,
             dueDate: now.addingTimeInterval(86_400)
         )
-        let overdue = try repository.create(
+        _ = try repository.create(
             counterparty: "Overdue", direction: .iOwe, principal: 30_000,
             dueDate: now.addingTimeInterval(-86_400)
         )
         let ordered = try repository.fetchAll(now: now)
         #expect(ordered.map(\.counterparty) == ["Overdue", "DueSoon", "Lunas"])
-        _ = (dueSoon, overdue)
     }
 }

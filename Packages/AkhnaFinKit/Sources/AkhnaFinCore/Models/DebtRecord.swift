@@ -95,6 +95,22 @@ extension DebtRecord {
         (payments ?? []).reduce(0) { $0 + $1.amount }
     }
 
+    /// Urutan daftar hutang: belum lunas dulu (terlambat paling atas, lalu jatuh
+    /// tempo terdekat), kemudian yang lunas mempertahankan urutan aslinya.
+    /// Satu sumber untuk repository & UI.
+    public static func openFirstSorted(_ records: [DebtRecord], now: Date = .now) -> [DebtRecord] {
+        let open = records.filter { !$0.isSettled }
+            .sorted { lhs, rhs in
+                switch (lhs.isOverdue(now: now), rhs.isOverdue(now: now)) {
+                case (true, false): return true
+                case (false, true): return false
+                default:
+                    return (lhs.dueDate ?? .distantFuture) < (rhs.dueDate ?? .distantFuture)
+                }
+            }
+        return open + records.filter(\.isSettled)
+    }
+
     /// Sisa hutang, clamp ≥ 0 (overpay tidak membuat sisa negatif).
     public var remaining: Decimal {
         max(0, principal - totalPaid)

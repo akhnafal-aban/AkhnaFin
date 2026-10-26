@@ -56,21 +56,14 @@ public final class DebtRepository {
         try context.save()
     }
 
-    /// Semua record; belum lunas dulu (terlambat paling atas), lalu yang lunas.
-    /// Sort di memory — status lunas dihitung, tak bisa masuk predicate.
+    /// Semua record dengan urutan `DebtRecord.openFirstSorted` — belum lunas dulu
+    /// (terlambat paling atas). Sort di memory: status lunas dihitung, tak bisa
+    /// masuk predicate.
     public func fetchAll(now: Date = .now) throws -> [DebtRecord] {
         let all = try context.fetch(FetchDescriptor<DebtRecord>(
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         ))
-        let open = all.filter { !$0.isSettled }
-            .sorted { lhs, rhs in
-                switch (lhs.isOverdue(now: now), rhs.isOverdue(now: now)) {
-                case (true, false): true
-                case (false, true): false
-                default: (lhs.dueDate ?? .distantFuture) < (rhs.dueDate ?? .distantFuture)
-                }
-            }
-        return open + all.filter(\.isSettled)
+        return DebtRecord.openFirstSorted(all, now: now)
     }
 
     // MARK: - Cicilan

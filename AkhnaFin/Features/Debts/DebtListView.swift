@@ -12,19 +12,16 @@ struct DebtListView: View {
 
     let repository: DebtRepository
 
+    private var orderedRecords: [DebtRecord] {
+        DebtRecord.openFirstSorted(records)
+    }
+
     private var openRecords: [DebtRecord] {
-        records.filter { !$0.isSettled }
-            .sorted { lhs, rhs in
-                switch (lhs.isOverdue(), rhs.isOverdue()) {
-                case (true, false): true
-                case (false, true): false
-                default: (lhs.dueDate ?? .distantFuture) < (rhs.dueDate ?? .distantFuture)
-                }
-            }
+        orderedRecords.filter { !$0.isSettled }
     }
 
     private var settledRecords: [DebtRecord] {
-        records.filter(\.isSettled)
+        orderedRecords.filter(\.isSettled)
     }
 
     var body: some View {
