@@ -4,8 +4,8 @@ import SwiftData
 /// Satu transaksi keuangan (pengeluaran / pemasukan / transfer).
 ///
 /// CloudKit-compatible: setiap atribut punya default value atau optional, relasi
-/// `category` optional (inverse didefinisikan di `Category.transactions`), dan tidak
-/// ada `@Attribute(.unique)`.
+/// `category` optional (inverse didefinisikan di `TransactionCategory.transactions`),
+/// dan tidak ada `@Attribute(.unique)`.
 @Model
 public final class MoneyTransaction {
     public var id: UUID = UUID()

@@ -2,14 +2,9 @@
 //  ConfirmExpenseSnippet.swift
 //  AkhnaFin
 //
-//  Snippet interaktif iOS 26 (result snippet, BUKAN requestConfirmation modal):
-//  kartu ringkasan draft + tiga tombol aksi (Simpan / Edit di App / Batal), tiap
-//  tombol AppIntent tersendiri yang dismiss/handoff dengan benar.
-//
-//  Kenapa bukan requestConfirmation: modal itu menahan `perform()` di `await`
-//  sehingga tombol "Edit di App" yang membuka app TIDAK pernah menutup snippet
-//  (bug device terverifikasi). Result snippet menyelesaikan perform seketika —
-//  membuka app lewat tombol menutup snippet (pola kanonik WWDC25 sesi 275).
+//  Snippet interaktif iOS 26: result snippet, BUKAN requestConfirmation.
+//  Modal menahan perform() di await sehingga tombol "Edit di App" tak bisa
+//  menutup snippet (bug device) — result snippet menutup benar.
 //
 
 import AppIntents

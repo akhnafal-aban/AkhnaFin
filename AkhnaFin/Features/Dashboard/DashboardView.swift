@@ -225,11 +225,8 @@ struct DashboardView: View {
                     angularInset: 1.5
                 )
                 .cornerRadius(4)
-                // Warna STATIS per sektor + legend manual — BUKAN
-                // `.foregroundStyle(by:)` + `chartForegroundStyleScale(domain:range:)`:
-                // kombinasi itu crash di runtime
-                // (Charts/ConcreteScale+Discrete.swift:96 nil unwrap, terverifikasi
-                // empiris di sim iOS 26.x lewat bisect).
+                // Warna STATIS per sektor + legend manual: foregroundStyle(by:) +
+                // chartForegroundStyleScale crash di runtime (Charts nil unwrap, iOS 26.x).
                 .foregroundStyle(sliceColor(slice))
                 .accessibilityLabel(slice.name)
                 .accessibilityValue(CurrencyFormatter.string(from: slice.total))

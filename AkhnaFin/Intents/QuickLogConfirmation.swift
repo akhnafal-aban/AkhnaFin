@@ -2,13 +2,8 @@
 //  QuickLogConfirmation.swift
 //  AkhnaFin
 //
-//  Helper bersama LogExpenseIntent & LogReceiptIntent: stash draft lalu sajikan
-//  snippet interaktif sebagai HASIL intent (perform selesai seketika).
-//
-//  Dulu memakai `requestConfirmation` yang menahan perform di `await` → tombol
-//  "Edit di App" tak bisa menutup snippet. Result snippet memperbaikinya:
-//  commit/edit/batal ditangani tombol (SaveDraftIntent/EditExpenseInAppIntent/
-//  CancelDraftIntent), masing-masing menutup snippet dengan benar.
+//  Helper bersama intent log: stash draft → snippet hasil (perform selesai
+//  seketika). Tombol aksi = intent tersendiri di ConfirmExpenseSnippet.
 //
 
 import AppIntents

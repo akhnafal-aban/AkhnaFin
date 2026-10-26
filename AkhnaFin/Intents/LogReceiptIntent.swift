@@ -2,9 +2,8 @@
 //  LogReceiptIntent.swift
 //  AkhnaFin
 //
-//  Skenario: user selesai bayar → screenshot resi → Shortcut memicu intent ini →
-//  OCR + heuristik mengisi draft → konfirmasi snippet DI LUAR APP (pola A3 yang
-//  sama dgn LogExpenseIntent) → tersimpan + gambar resi ikut tercatat.
+//  Screenshot resi → model multimodal (PLAN-006) → draft → konfirmasi snippet
+//  di luar app — pola sama dengan LogExpenseIntent. Gambar resi ikut tersimpan.
 //
 
 import AppIntents

@@ -49,11 +49,8 @@ struct RootView: View {
 
     private func consumeEditRequest() {
         guard let pending = PendingDraftStore.consumeEditRequest() else {
-            // Tidak ada edit-request → mungkin ADA konfirmasi Siri berjalan (mis.
-            // app di-foreground saat snippet menimpa). JANGAN sentuh slot confirming:
-            // menghapusnya akan mencuri draft yang sedang dikonfirmasi (review #5).
-            // Slot yang batal bersifat inert (hanya dibaca saat konfirmasi aktif)
-            // dan akan ditimpa stash berikutnya.
+            // Tanpa edit-request mungkin ADA konfirmasi Siri aktif — slot confirming
+            // jangan disentuh (menghapusnya = mencuri draft yang sedang dikonfirmasi).
             return
         }
         handoffDraft = HandoffDraft(
