@@ -39,6 +39,7 @@ enum AppContainer {
             // Konvergensi multi-device: gabungkan built-in dobel setelah import CloudKit tiba.
             try CategorySeeder.dedupeIfNeeded(context: container.mainContext)
         } catch {
+            logger.error("Seeding kategori gagal: \(String(describing: error), privacy: .public)")
             assertionFailure("Seeding kategori gagal: \(error)")
         }
         return container
