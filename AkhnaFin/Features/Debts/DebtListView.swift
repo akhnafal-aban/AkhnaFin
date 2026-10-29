@@ -72,7 +72,7 @@ struct DebtListView: View {
                 Image(systemName: record.direction == .iOwe
                     ? "arrow.up.right.circle.fill"
                     : "arrow.down.left.circle.fill")
-                    .foregroundStyle(record.direction == .iOwe ? .red : .green)
+                    .foregroundStyle(record.direction == .iOwe ? AppTheme.expenseRed : AppTheme.lime)
                     .font(.title3)
                     .accessibilityHidden(true)
 

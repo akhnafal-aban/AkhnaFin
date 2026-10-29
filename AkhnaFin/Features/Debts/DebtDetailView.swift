@@ -25,11 +25,11 @@ struct DebtDetailView: View {
                     Spacer()
                     if record.isSettled {
                         Label("Lunas", systemImage: "checkmark.seal.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(AppTheme.lime)
                             .font(.subheadline.weight(.semibold))
                     } else if record.isOverdue() {
                         Label("Terlambat", systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(AppTheme.expenseRed)
                             .font(.subheadline.weight(.semibold))
                     }
                 }

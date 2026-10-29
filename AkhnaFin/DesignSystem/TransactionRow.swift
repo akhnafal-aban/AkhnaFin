@@ -12,8 +12,9 @@ struct TransactionRow: View {
         HStack(spacing: 12) {
             Image(systemName: transaction.category?.iconName ?? "tag")
                 .font(.body)
+                .foregroundStyle(iconColor)
                 .frame(width: 32, height: 32)
-                .background(.quaternary, in: Circle())
+                .background(iconBackground, in: Circle())
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .lineLimit(1)
@@ -28,9 +29,19 @@ struct TransactionRow: View {
             Spacer()
 
             Text(formattedAmount)
-                .font(.callout.monospacedDigit())
-                .foregroundStyle(transaction.type == .income ? .green : .primary)
+                .font(.callout.monospacedDigit().weight(.medium))
+                .foregroundStyle(transaction.type == .income ? AppTheme.lime : AppTheme.ink)
         }
+    }
+
+    private var iconColor: Color {
+        guard let hex = transaction.category?.colorHex, !hex.isEmpty else { return .secondary }
+        return Color(hex: hex)
+    }
+
+    private var iconBackground: Color {
+        guard let hex = transaction.category?.colorHex, !hex.isEmpty else { return Color(.systemGray4).opacity(0.4) }
+        return Color(hex: hex).opacity(0.16)
     }
 
     private var title: String {
