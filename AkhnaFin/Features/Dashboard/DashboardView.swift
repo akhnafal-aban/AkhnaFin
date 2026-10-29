@@ -29,9 +29,9 @@ struct DashboardView: View {
 
                 if periodTransactions.isEmpty {
                     ContentUnavailableView(
-                        "Belum ada transaksi di periode ini",
+                        "Periode ini masih kosong",
                         systemImage: "chart.pie",
-                        description: Text("Ganti periode, atau catat lewat tombol + di tab Transaksi.")
+                        description: Text("Catat lewat tombol + di tab Transaksi — atau bilang saja ke Siri, sekarang paham Bahasa Indonesia.")
                     )
                     .listRowBackground(Color.clear)
 
@@ -235,6 +235,17 @@ struct DashboardView: View {
                 .accessibilityValue(CurrencyFormatter.string(from: slice.total))
             }
             .frame(minHeight: 200)
+            .overlay {
+                VStack(spacing: 2) {
+                    Text("Total")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text(CurrencyFormatter.string(from: totals.expense))
+                        .font(.subheadline.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(AppTheme.ink)
+                }
+                .allowsHitTesting(false)
+            }
 
             FlowLegend(items: slices.map { ($0.name, sliceColor($0)) })
         }

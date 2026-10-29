@@ -160,9 +160,9 @@ struct TransactionListView: View {
             .overlay {
                 if transactions.isEmpty {
                     ContentUnavailableView(
-                        "Belum ada transaksi",
+                        "Transaksi pertamamu menunggu",
                         systemImage: "list.bullet.rectangle",
-                        description: Text("Tap + untuk mencatat transaksi pertamamu.")
+                        description: Text("Tap + lalu pilih Text Entry — ketik misalnya \"makan siang 35k\".")
                     )
                 } else if filteredTransactions.isEmpty {
                     ContentUnavailableView.search(text: searchText)

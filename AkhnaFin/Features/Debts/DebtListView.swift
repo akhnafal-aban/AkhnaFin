@@ -56,9 +56,9 @@ struct DebtListView: View {
         .overlay {
             if records.isEmpty {
                 ContentUnavailableView(
-                    "Belum ada hutang",
-                    systemImage: "person.2.badge.minus",
-                    description: Text("Tap + untuk mencatat hutang atau piutang pertamamu.")
+                    "Bersih",
+                    systemImage: "checkmark.seal",
+                    description: Text("Belum ada hutang atau piutang yang tercatat.")
                 )
             }
         }
