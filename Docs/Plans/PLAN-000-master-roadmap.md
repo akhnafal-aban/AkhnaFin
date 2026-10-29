@@ -20,7 +20,7 @@ Konvensi dokumen plan (berlaku semua plan berikutnya):
 
 ## 2. Status Proyek (handoff)
 
-Commit: `2d11ef8` fondasi → `6dc16b7` Fase 0 → `3e35255` refactor logic-only → `b7db52f` AGENTS.md → `37df351` review fixes → `765f342` Fase 1 parser → `1c77517` Fase 2 intent.
+Commit: `2d11ef8` fondasi → `6dc16b7` Fase 0 → `3e35255` refactor logic-only → `b7db52f` aturan proyek → `37df351` review fixes → `765f342` Fase 1 parser → `1c77517` Fase 2 intent.
 
 **Arsitektur (final, jangan ubah tanpa persetujuan user):**
 - App target = SEMUA UI + composition root: `App/` (AkhnaFinApp, AppContainer, AppDependencies, RootView), `DesignSystem/`, `Features/Transactions/`, `Features/QuickAdd/`, `Intents/`.
