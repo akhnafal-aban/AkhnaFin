@@ -48,9 +48,9 @@ struct SettingsView: View {
     // MARK: - Status penyimpanan
 
     private var isCloud: Bool { AppContainer.activeStorageMode == .cloudKit }
-    private var storageLabel: String { isCloud ? "iCloud" : "Lokal" }
+    private var storageLabel: LocalizedStringResource { isCloud ? "iCloud" : "Lokal" }
     private var storageIcon: String { isCloud ? "checkmark.icloud" : "icloud.slash" }
-    private var storageFooter: String {
+    private var storageFooter: LocalizedStringResource {
         isCloud
             ? "Transaksimu tersinkron & ter-backup otomatis ke iCloud."
             : "iCloud tidak tersedia (mis. belum login). Data tersimpan lokal di perangkat ini saja."
