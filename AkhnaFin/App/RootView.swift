@@ -37,7 +37,6 @@ struct RootView: View {
         .onChange(of: scenePhase) {
             if scenePhase == .active { consumeEditRequest() }
         }
-        .preferredColorScheme(.dark)
         .sheet(item: $handoffDraft) { handoff in
             TransactionFormView(
                 mode: .confirmDraft(handoff.draft, source: handoff.source, receiptImage: handoff.receiptImage),

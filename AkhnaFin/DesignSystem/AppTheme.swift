@@ -1,11 +1,11 @@
 import SwiftUI
 
 enum AppTheme {
-    static let background = Color(hex: "#1A1714")
-    static let surface = Color(hex: "#26221E")
-    static let ink = Color(hex: "#F2EEE8")
-    static let lime = Color(hex: "#A3E635")
-    static let expenseRed = Color(hex: "#EF7B64")
+    static let background = Color("AppBackground")
+    static let surface = Color("AppSurface")
+    static let ink = Color("AppInk")
+    static let lime = Color("AppLime")
+    static let expenseRed = Color("AppExpenseRed")
 }
 
 extension View {

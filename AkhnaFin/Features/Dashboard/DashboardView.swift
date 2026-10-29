@@ -10,6 +10,8 @@ struct DashboardView: View {
 
     @State private var period: StatsPeriod = .month
     @State private var interval: DateInterval = StatsPeriod.month.interval(containing: .now)
+    @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 36
+    @ScaledMetric(relativeTo: .title3) private var miniStatSize: CGFloat = 20
 
     private let debtRepository: DebtRepository?
 
@@ -163,7 +165,7 @@ struct DashboardView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Text(signed(net))
-                    .font(Font.system(size: 36, weight: .light).monospacedDigit())
+                    .font(Font.system(size: heroSize, weight: .light).monospacedDigit())
                     .foregroundStyle(isSurplus ? AppTheme.lime : AppTheme.expenseRed)
             }
 
@@ -182,7 +184,7 @@ struct DashboardView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
             Text(CurrencyFormatter.string(from: amount))
-                .font(Font.system(size: 20, weight: .light).monospacedDigit())
+                .font(Font.system(size: miniStatSize, weight: .light).monospacedDigit())
                 .foregroundStyle(AppTheme.ink)
         }
     }
