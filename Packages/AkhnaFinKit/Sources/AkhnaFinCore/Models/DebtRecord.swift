@@ -5,7 +5,7 @@ public enum DebtDirection: String, Codable, CaseIterable, Sendable {
     case iOwe
     case owedToMe
 
-    public var displayName: String {
+    public var displayName: LocalizedStringResource {
         switch self {
         case .iOwe: "Aku Berutang"
         case .owedToMe: "Berutang ke Aku"

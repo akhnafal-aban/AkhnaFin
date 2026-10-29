@@ -5,7 +5,7 @@ public enum TransactionType: String, Codable, CaseIterable, Sendable {
     case income
     case transfer
 
-    public var displayName: String {
+    public var displayName: LocalizedStringResource {
         switch self {
         case .expense: "Pengeluaran"
         case .income: "Pemasukan"
