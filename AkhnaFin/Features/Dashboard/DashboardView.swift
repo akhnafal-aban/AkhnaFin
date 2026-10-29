@@ -42,11 +42,6 @@ struct DashboardView: View {
                         .warmRow()
                     }
                 } else {
-                    Section {
-                        periodControls
-                    }
-                    .warmRow()
-
                     Section("Ringkasan") {
                         summaryRows
                     }
@@ -158,27 +153,43 @@ struct DashboardView: View {
 
     // MARK: - Ringkasan
 
+    /// Hero: selisih periode (angka besar ringan) + dua statistik pendamping.
     private var summaryRows: some View {
-        Group {
-            summaryRow("Pengeluaran", totals.expense, color: .red, icon: "arrow.up.circle.fill")
-            summaryRow("Pemasukan", totals.income, color: .green, icon: "arrow.down.circle.fill")
-            summaryRow(
-                "Selisih", totals.income - totals.expense,
-                color: totals.income >= totals.expense ? .green : .red,
-                icon: "equal.circle.fill"
-            )
+        let net = totals.income - totals.expense
+        let isSurplus = net >= 0
+        return VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(isSurplus ? "Sisa periode ini" : "Melebihi pemasukan")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(signed(net))
+                    .font(Font.system(size: 36, weight: .light).monospacedDigit())
+                    .foregroundStyle(isSurplus ? AppTheme.lime : AppTheme.expenseRed)
+            }
+
+            HStack(spacing: 24) {
+                miniStat("Pengeluaran", totals.expense, color: AppTheme.expenseRed)
+                miniStat("Pemasukan", totals.income, color: AppTheme.lime)
+            }
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func miniStat(_ title: String, _ amount: Decimal, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(CurrencyFormatter.string(from: amount))
+                .font(Font.system(size: 20, weight: .light).monospacedDigit())
+                .foregroundStyle(AppTheme.ink)
         }
     }
 
-    private func summaryRow(_ title: String, _ amount: Decimal, color: Color, icon: String) -> some View {
-        HStack {
-            Label(title, systemImage: icon)
-                .foregroundStyle(color)
-            Spacer()
-            Text(CurrencyFormatter.string(from: amount))
-                .font(.body.monospacedDigit().weight(.semibold))
-        }
-        .accessibilityElement(children: .combine)
+    private func signed(_ amount: Decimal) -> String {
+        let formatted = CurrencyFormatter.string(from: abs(amount))
+        return amount < 0 ? "-\(formatted)" : "+\(formatted)"
     }
 
     // MARK: - Kartu Hutang
@@ -191,14 +202,14 @@ struct DashboardView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Label("Aku Berutang", systemImage: "arrow.up.right.circle.fill")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(AppTheme.expenseRed)
                     Spacer()
                     Text(CurrencyFormatter.string(from: summary.iOwe))
                         .font(.body.monospacedDigit().weight(.semibold))
                 }
                 HStack {
                     Label("Piutang", systemImage: "arrow.down.left.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(AppTheme.lime)
                     Spacer()
                     Text(CurrencyFormatter.string(from: summary.owedToMe))
                         .font(.body.monospacedDigit().weight(.semibold))
@@ -242,7 +253,7 @@ struct DashboardView: View {
                 x: .value("Tanggal", point.day, unit: period == .year ? .month : .day),
                 y: .value("Pengeluaran", doubleValue(point.total))
             )
-            .foregroundStyle(.tint)
+            .foregroundStyle(AppTheme.expenseRed)
             .accessibilityLabel(point.day.formatted(
                 period == .year ? .dateTime.month(.wide) : .dateTime.day().month()
             ))
