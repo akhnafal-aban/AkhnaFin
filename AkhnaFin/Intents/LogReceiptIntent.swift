@@ -31,12 +31,20 @@ struct LogReceiptIntent: AppIntent {
         let imageData = receipt.data
         intentLog.info("LogReceipt mulai (\(imageData.count, privacy: .public) bytes)")
 
-        let draft = try await QuickLogPipeline(
-            parser: dependencies.parser,
-            scanner: dependencies.scanner
-        ).parseReceiptDraft(fromImage: imageData)
+        let pipeline = QuickLogPipeline(parser: dependencies.parser, scanner: dependencies.scanner)
+        let draft: TransactionDraft
+        if #available(iOS 27, *) {
+            draft = try await performBackgroundTask(options: []) { @Sendable in
+                try await pipeline.parseReceiptDraft(fromImage: imageData)
+            }
+        } else {
+            draft = try await pipeline.parseReceiptDraft(fromImage: imageData)
+        }
         intentLog.info("LogReceipt parse sukses")
 
         return stashAndPresentDraft(draft, source: .receipt, receiptImage: imageData)
     }
 }
+
+@available(iOS 27, *)
+extension LogReceiptIntent: LongRunningIntent {}

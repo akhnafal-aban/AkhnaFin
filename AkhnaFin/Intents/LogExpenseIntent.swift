@@ -28,12 +28,23 @@ struct LogExpenseIntent: AppIntent {
         let dependencies = AppContainer.dependencies
         intentLog.info("LogExpense mulai (\(text.count, privacy: .public) chars)")
 
-        let draft = try await QuickLogPipeline(parser: dependencies.parser).parseDraft(from: text)
+        let pipeline = QuickLogPipeline(parser: dependencies.parser)
+        let draft: TransactionDraft
+        if #available(iOS 27, *) {
+            draft = try await performBackgroundTask(options: []) { @Sendable in
+                try await pipeline.parseDraft(from: text)
+            }
+        } else {
+            draft = try await pipeline.parseDraft(from: text)
+        }
         intentLog.info("LogExpense parse sukses")
 
         return stashAndPresentDraft(draft, source: .appIntent)
     }
 }
+
+@available(iOS 27, *)
+extension LogExpenseIntent: LongRunningIntent {}
 
 struct AkhnaFinShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
