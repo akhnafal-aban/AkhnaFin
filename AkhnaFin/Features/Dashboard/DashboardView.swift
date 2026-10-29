@@ -92,8 +92,7 @@ struct DashboardView: View {
                     interval = period.step(interval, by: -1)
                 } label: {
                     Image(systemName: "chevron.backward")
-                }
-                .accessibilityLabel("Periode sebelumnya")
+                }                .accessibilityLabel("Periode sebelumnya")
 
                 Spacer()
                 Text(intervalLabel)
@@ -111,7 +110,7 @@ struct DashboardView: View {
             }
             .buttonStyle(.borderless)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
     }
 
     private var intervalLabel: String {

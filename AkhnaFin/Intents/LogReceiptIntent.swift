@@ -17,6 +17,7 @@ struct LogReceiptIntent: AppIntent {
     static let description = IntentDescription(
         "Analisis screenshot resi lalu catat transaksinya. Sambungkan dengan aksi \"Take Screenshot\" di Shortcuts."
     )
+    static var supportedModes: IntentModes { [.background, .foreground(.dynamic)] }
 
     @Parameter(
         title: "Gambar Resi",
@@ -26,7 +27,7 @@ struct LogReceiptIntent: AppIntent {
     var receipt: IntentFile
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
+    func perform() async throws -> some IntentResult & ProvidesDialog {
         let dependencies = AppContainer.dependencies
         let imageData = receipt.data
         intentLog.info("LogReceipt mulai (\(imageData.count, privacy: .public) bytes)")
@@ -42,7 +43,12 @@ struct LogReceiptIntent: AppIntent {
         }
         intentLog.info("LogReceipt parse sukses")
 
-        return stashAndPresentDraft(draft, source: .receipt, receiptImage: imageData)
+        PendingDraftStore.stash(draft, source: .receipt, receiptImage: imageData)
+        if systemContext.currentMode.canContinueInForeground {
+            try await continueInForeground("Periksa resinya di app", alwaysConfirm: false)
+        }
+        PendingDraftStore.promoteStashToEditRequest()
+        return .result(dialog: "Resi terbaca — periksa detailnya di app.")
     }
 }
 
