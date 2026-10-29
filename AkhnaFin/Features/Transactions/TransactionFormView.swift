@@ -26,6 +26,7 @@ struct TransactionFormView: View {
     @State private var note: String
     @State private var category: TransactionCategory?
     @State private var didResolveSuggestion = false
+    @State private var isRawInputExpanded = false
     @State private var saveFailed = false
     @State private var isSaving = false
 
@@ -63,15 +64,6 @@ struct TransactionFormView: View {
     var body: some View {
         NavigationStack {
             Form {
-                if !rawInput.isEmpty {
-                    Section("Dari kalimatmu") {
-                        Text("“\(rawInput)”")
-                            .font(.callout)
-                            .italic()
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
                 Picker("Jenis", selection: $type) {
                     ForEach(TransactionType.allCases, id: \.self) { type in
                         Text(type.displayName).tag(type)
@@ -88,6 +80,27 @@ struct TransactionFormView: View {
                     DatePicker("Tanggal", selection: $date)
                     TextField("Merchant / tempat beli", text: $merchant)
                     TextField("Catatan", text: $note)
+                }
+
+                if !rawInput.isEmpty {
+                    Section {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("“\(rawInput)”")
+                                .font(.callout)
+                                .italic()
+                                .foregroundStyle(.secondary)
+                                .lineLimit(isRawInputExpanded ? nil : 1)
+                            if isRawInputLong {
+                                Button(isRawInputExpanded ? "Tutup" : "Baca selengkapnya") {
+                                    withAnimation { isRawInputExpanded.toggle() }
+                                }
+                                .font(.caption.weight(.semibold))
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    } header: {
+                        Text("Dari kalimatmu")
+                    }
                 }
             }
             .keyboardDismissable()
@@ -127,6 +140,11 @@ struct TransactionFormView: View {
 
     private var rawInput: String {
         if case .confirmDraft(let draft, _, _) = mode { draft.rawInput } else { "" }
+    }
+
+    /// Kira-kira lebih dari satu baris pada lebar form (callout) — butuh read-more.
+    private var isRawInputLong: Bool {
+        rawInput.count > 45
     }
 
     private func resolveSuggestedCategoryOnce() {
