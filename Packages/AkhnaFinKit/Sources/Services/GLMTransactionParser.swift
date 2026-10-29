@@ -37,6 +37,14 @@ struct GLMParsedTransaction: Decodable {
     }
 }
 
+/// Double → Decimal dibulatkan 2 digit (hindari artefak floating-point), minimum 0.
+func sanitizedRupiah(_ amount: Double) -> Decimal {
+    var value = Decimal(max(0, amount))
+    var rounded = Decimal()
+    NSDecimalRound(&rounded, &value, 2, .plain)
+    return rounded
+}
+
 public struct GLMTransactionParser: TransactionParsing {
     private let client: InferenceClient
     private let keyStore: any APIKeyStoring

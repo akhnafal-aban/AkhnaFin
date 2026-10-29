@@ -6,7 +6,13 @@ import ServiceInterfaces
 
 @Suite("Parser resi — heuristik deterministik")
 struct ReceiptParsingTests {
-    private let parser = FoundationModelsParser(categoryNames: [], subcategoryNames: [])
+    /// Tanpa key → parseReceipt otomatis jatuh ke heuristik lokal, tanpa network.
+    private let parser = GLMTransactionParser(
+        client: InferenceClient(keyStore: MockAPIKeyStore()),
+        keyStore: MockAPIKeyStore(),
+        categoryNames: [],
+        subcategoryNames: []
+    )
 
     private struct EvalCase: Sendable {
         let ocr: String
