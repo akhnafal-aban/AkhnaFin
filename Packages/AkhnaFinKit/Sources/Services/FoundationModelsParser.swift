@@ -110,6 +110,23 @@ public struct FoundationModelsParser: TransactionParsing {
             )
             parserLog.info("parse sukses (\(text.count) chars input)")
             return response.content.draft(rawInput: text)
+        } catch let error as LanguageModelSession.GenerationError {
+            switch error {
+            case .unsupportedLanguageOrLocale:
+                throw TransactionParsingError.parsingFailed(
+                    "Bahasa itu belum didukung model lokal. Tulis dalam Bahasa Inggris, mis. \"buy meatballs 20k at the canteen\"."
+                )
+            case .guardrailViolation:
+                throw TransactionParsingError.parsingFailed(
+                    "Kalimat itu ditolak filter keamanan model. Coba tulis ulang dengan kata lain."
+                )
+            case .exceededContextWindowSize:
+                throw TransactionParsingError.parsingFailed("Kalimat terlalu panjang — persingkat dulu.")
+            default:
+                throw TransactionParsingError.parsingFailed(
+                    "Gagal memahami kalimat itu. Tulis dalam Bahasa Inggris, mis. \"buy meatballs 20k at the canteen\"."
+                )
+            }
         } catch {
             parserLog.error("FoundationModels respond gagal: \(String(describing: error), privacy: .public)")
             throw TransactionParsingError.parsingFailed(
