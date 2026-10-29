@@ -18,3 +18,7 @@ build/
 
 # Graphify knowledge graph output (generated)
 graphify-out/
+
+# Local agent skill installs (bukan bagian dari app)
+.agents/
+skills-lock.json
