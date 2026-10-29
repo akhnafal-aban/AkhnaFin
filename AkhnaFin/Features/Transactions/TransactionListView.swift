@@ -9,6 +9,7 @@ import Persistence
 struct TransactionListView: View {
     @Query(sort: \MoneyTransaction.date, order: .reverse) private var transactions: [MoneyTransaction]
     @State private var searchText = ""
+    @State private var dayGroups: [(day: Date, items: [MoneyTransaction])] = []
     @State private var isAdding = false
     @State private var editingTransaction: MoneyTransaction?
     @State private var deleteFailed = false
@@ -48,10 +49,14 @@ struct TransactionListView: View {
         }
     }
 
+    private func regroup() {
+        dayGroups = TransactionGrouping.groupByDay(filteredTransactions)
+    }
+
     var body: some View {
         NavigationStack {
             List {
-                ForEach(TransactionGrouping.groupByDay(filteredTransactions), id: \.day) { group in
+                ForEach(dayGroups, id: \.day) { group in
                     Section {
                         ForEach(group.items) { transaction in
                             TransactionRow(transaction)
@@ -82,6 +87,9 @@ struct TransactionListView: View {
             }
             .navigationTitle("Transaksi")
             .toolbarTitleDisplayMode(.inlineLarge)
+            .onAppear(perform: regroup)
+            .onChange(of: searchText) { regroup() }
+            .onChange(of: transactions.map(\.date)) { regroup() }
             .searchable(text: $searchText, prompt: "Cari merchant, catatan, kategori")
             .toolbar {
                 Menu {
