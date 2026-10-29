@@ -20,12 +20,13 @@ struct SettingsView: View {
                             LabeledContent {
                                 Text(hasStoredKey ? "Terpasang" : "Belum diisi")
                                     .font(.subheadline)
-                                    .foregroundStyle(hasStoredKey ? .green : .secondary)
+                                    .foregroundStyle(hasStoredKey ? AppTheme.lime : .secondary)
                             } label: {
                                 Label("W&B Inference", systemImage: "wand.and.stars")
                             }
                         }
                     }
+                    .warmRow()
                 }
 
                 Section("Data") {
@@ -35,6 +36,7 @@ struct SettingsView: View {
                         Label("Kelola Kategori", systemImage: "tag")
                     }
                 }
+                .warmRow()
 
                 Section {
                     Toggle(isOn: $recordLocation) {
@@ -43,6 +45,7 @@ struct SettingsView: View {
                 } footer: {
                     Text("Menyimpan tempat transaksi secara otomatis saat kamu mencatat di dalam app. Izin lokasi diminta saat pertama kali.")
                 }
+                .warmRow()
 
                 Section {
                     LabeledContent {
@@ -55,11 +58,14 @@ struct SettingsView: View {
                 } footer: {
                     Text(storageFooter)
                 }
+                .warmRow()
 
                 Section("Tentang") {
                     LabeledContent("Versi", value: appVersion)
                 }
+                .warmRow()
             }
+            .warmDarkBackground()
             .navigationTitle("Pengaturan")
             .onAppear { hasStoredKey = keyStore?.read()?.isEmpty == false }
         }

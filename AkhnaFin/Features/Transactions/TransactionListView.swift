@@ -60,6 +60,7 @@ struct TransactionListView: View {
                     Section {
                         ForEach(group.items) { transaction in
                             TransactionRow(transaction)
+                                .warmRow()
                                 .contentShape(Rectangle())
                                 .onTapGesture { editingTransaction = transaction }
                                 .swipeActions(edge: .trailing) {
@@ -85,6 +86,7 @@ struct TransactionListView: View {
                     }
                 }
             }
+            .warmDarkBackground()
             .navigationTitle("Transaksi")
             .toolbarTitleDisplayMode(.inlineLarge)
             .onAppear(perform: regroup)

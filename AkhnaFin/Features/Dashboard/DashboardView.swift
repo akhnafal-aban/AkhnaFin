@@ -25,6 +25,7 @@ struct DashboardView: View {
                 Section {
                     periodControls
                 }
+                .warmRow()
 
                 if periodTransactions.isEmpty {
                     ContentUnavailableView(
@@ -38,27 +39,38 @@ struct DashboardView: View {
                         Section("Hutang") {
                             debtCard(repository: debtRepository)
                         }
+                        .warmRow()
                     }
                 } else {
+                    Section {
+                        periodControls
+                    }
+                    .warmRow()
+
                     Section("Ringkasan") {
                         summaryRows
                     }
+                    .warmRow()
                     if !slices.isEmpty {
                         Section("Pengeluaran per Kategori") {
                             categoryDonut
                         }
+                        .warmRow()
                     }
                     if let debtRepository {
                         Section("Hutang") {
                             debtCard(repository: debtRepository)
                         }
+                        .warmRow()
                     }
 
                     Section(period == .year ? "Tren Bulanan" : "Tren Harian") {
                         trendBars
                     }
+                    .warmRow()
                 }
             }
+            .warmDarkBackground()
             .navigationTitle("Dashboard")
             .toolbarTitleDisplayMode(.inlineLarge)
             .onChange(of: period) {
