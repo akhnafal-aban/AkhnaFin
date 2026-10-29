@@ -17,7 +17,6 @@ struct LogReceiptIntent: AppIntent {
     static let description = IntentDescription(
         "Analisis screenshot resi lalu catat transaksinya. Sambungkan dengan aksi \"Take Screenshot\" di Shortcuts."
     )
-    static let openAppWhenRun = false
 
     @Parameter(
         title: "Gambar Resi",

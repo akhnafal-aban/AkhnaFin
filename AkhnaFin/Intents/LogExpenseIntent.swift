@@ -16,7 +16,6 @@ struct LogExpenseIntent: AppIntent {
     static let description = IntentDescription(
         "Catat transaksi dari satu kalimat Bahasa Inggris, mis. \"buy meatballs 20k at the canteen\"."
     )
-    static let openAppWhenRun = false
 
     @Parameter(
         title: "Transaksi",

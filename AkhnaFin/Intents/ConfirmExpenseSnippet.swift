@@ -40,7 +40,7 @@ struct SaveDraftIntent: AppIntent {
 struct EditExpenseInAppIntent: AppIntent {
     static let title: LocalizedStringResource = "Edit Draft di App"
     static let isDiscoverable = false
-    static let openAppWhenRun = true
+    static var supportedModes: IntentModes { .foreground }
 
     @MainActor
     func perform() async throws -> some IntentResult {
