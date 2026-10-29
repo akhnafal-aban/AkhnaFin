@@ -23,15 +23,6 @@ enum PendingDraftStore {
         writeImage(receiptImage, to: stashImageURL)
     }
 
-    static func currentStash() -> TransactionDraft? {
-        read(from: stashURL)?.draft
-    }
-
-    static func currentStashPayload() -> (draft: TransactionDraft, source: EntrySource, receiptImage: Data?)? {
-        guard let payload = read(from: stashURL) else { return nil }
-        return (payload.draft, payload.source, readData(from: stashImageURL))
-    }
-
     static func clearStash() {
         removeItem(at: stashURL)
         removeItem(at: stashImageURL)

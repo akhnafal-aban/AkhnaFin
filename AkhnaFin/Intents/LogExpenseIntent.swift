@@ -16,6 +16,7 @@ struct LogExpenseIntent: AppIntent {
     static let description = IntentDescription(
         "Catat transaksi dari satu kalimat Bahasa Inggris, mis. \"buy meatballs 20k at the canteen\"."
     )
+    static var supportedModes: IntentModes { [.background, .foreground(.dynamic)] }
 
     @Parameter(
         title: "Transaksi",
@@ -24,7 +25,7 @@ struct LogExpenseIntent: AppIntent {
     var text: String
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
+    func perform() async throws -> some IntentResult & ProvidesDialog {
         let dependencies = AppContainer.dependencies
         intentLog.info("LogExpense mulai (\(text.count, privacy: .public) chars)")
 
@@ -39,7 +40,12 @@ struct LogExpenseIntent: AppIntent {
         }
         intentLog.info("LogExpense parse sukses")
 
-        return stashAndPresentDraft(draft, source: .appIntent)
+        PendingDraftStore.stash(draft, source: .appIntent)
+        if systemContext.currentMode.canContinueInForeground {
+            try await continueInForeground("Periksa catatannya di app", alwaysConfirm: false)
+        }
+        PendingDraftStore.promoteStashToEditRequest()
+        return .result(dialog: "Tercatat \(DraftSummary.text(of: draft)) — periksa detailnya di app.")
     }
 }
 
