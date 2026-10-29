@@ -219,7 +219,7 @@ struct DashboardView: View {
     }
 
     private func sliceColor(_ slice: TransactionAggregation.CategorySlice) -> Color {
-        slice.colorHex.isEmpty ? Color.gray.opacity(0.55) : Color(hex: slice.colorHex)
+        slice.colorHex.isEmpty ? Color(.systemGray3) : Color(hex: slice.colorHex)
     }
 
     // MARK: - Tren
@@ -260,11 +260,11 @@ private struct FlowLegend: View {
         LazyVGrid(
             columns: [GridItem(.adaptive(minimum: 110), alignment: .leading)],
             alignment: .leading,
-            spacing: 6
+            spacing: 8
         ) {
             ForEach(items, id: \.name) { item in
-                HStack(spacing: 6) {
-                    Circle().fill(item.color).frame(width: 9, height: 9)
+                HStack(spacing: 8) {
+                    Circle().fill(item.color).frame(width: 8, height: 8)
                     Text(item.name)
                         .font(.caption)
                         .foregroundStyle(.secondary)

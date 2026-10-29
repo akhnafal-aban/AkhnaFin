@@ -77,7 +77,7 @@ struct DraftSnippetView: View {
                     Text(draft.type.displayName)
                         .font(.caption.weight(.semibold))
                         .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
+                        .padding(.vertical, 4)
                         .background(.quaternary, in: Capsule())
                 }
 
@@ -130,9 +130,9 @@ struct DraftSnippetView: View {
     }
 
     private func row(_ icon: String, _ text: String) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Image(systemName: icon)
-                .frame(width: 18)
+                .frame(width: 16)
                 .foregroundStyle(.secondary)
             Text(text).lineLimit(1)
         }

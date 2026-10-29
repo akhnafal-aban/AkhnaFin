@@ -14,7 +14,7 @@ struct TransactionRow: View {
                 .font(.body)
                 .frame(width: 32, height: 32)
                 .background(.quaternary, in: Circle())
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .lineLimit(1)
                 if !subtitle.isEmpty {

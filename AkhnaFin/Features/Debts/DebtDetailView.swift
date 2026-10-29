@@ -76,7 +76,7 @@ struct DebtDetailView: View {
                 Section("Riwayat Pembayaran") {
                     ForEach(payments.sorted { $0.date > $1.date }, id: \.id) { payment in
                         HStack {
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: 4) {
                                 Text(CurrencyFormatter.string(from: payment.amount))
                                     .font(.body.monospacedDigit())
                                 if !payment.note.isEmpty {

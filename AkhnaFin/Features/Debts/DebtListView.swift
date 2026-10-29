@@ -76,7 +76,7 @@ struct DebtListView: View {
                     .font(.title3)
                     .accessibilityHidden(true)
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(record.counterparty)
                     HStack(spacing: 4) {
                         if record.isOverdue() {

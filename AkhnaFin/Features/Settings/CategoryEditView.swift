@@ -79,7 +79,7 @@ struct CategoryEditView: View {
                     .foregroundStyle(iconName == symbol ? Color.white : Color.primary)
                     .background(
                         iconName == symbol ? Color(hex: colorHex) : Color(.secondarySystemFill),
-                        in: RoundedRectangle(cornerRadius: 9)
+                        in: RoundedRectangle(cornerRadius: 10)
                     )
                     .onTapGesture { iconName = symbol }
             }
@@ -92,7 +92,7 @@ struct CategoryEditView: View {
             ForEach(Self.colorChoices, id: \.self) { hex in
                 Circle()
                     .fill(Color(hex: hex))
-                    .frame(width: 30, height: 30)
+                    .frame(width: 32, height: 32)
                     .overlay {
                         if colorHex == hex {
                             Image(systemName: "checkmark").font(.caption.bold()).foregroundStyle(.white)

@@ -64,7 +64,7 @@ struct CategoryManagementView: View {
                     .font(.callout)
                     .foregroundStyle(.white)
                     .frame(width: 28, height: 28)
-                    .background(Color(hex: category.colorHex), in: RoundedRectangle(cornerRadius: 7))
+                    .background(Color(hex: category.colorHex), in: RoundedRectangle(cornerRadius: 8))
                 Text(category.name)
                     .foregroundStyle(.primary)
                 Spacer()
