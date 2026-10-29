@@ -27,7 +27,10 @@ struct RootView: View {
                 )
             }
             Tab("Pengaturan", systemImage: "gearshape") {
-                SettingsView(repository: dependencies.repository)
+                SettingsView(
+                    repository: dependencies.repository,
+                    keyStore: dependencies.keyStore
+                )
             }
         }
         .onAppear(perform: consumeEditRequest)

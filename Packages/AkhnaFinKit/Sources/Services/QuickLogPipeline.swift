@@ -23,7 +23,7 @@ public struct QuickLogPipeline: Sendable {
     public init(
         parser: any TransactionParsing,
         scanner: (any ReceiptScanning)? = nil,
-        timeout: Duration = .seconds(15)
+        timeout: Duration = .seconds(45)
     ) {
         self.parser = parser
         self.scanner = scanner
