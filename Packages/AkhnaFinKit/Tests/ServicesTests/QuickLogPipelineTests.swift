@@ -3,7 +3,7 @@ import Foundation
 import ServiceInterfaces
 @testable import Services
 
-@Suite("QuickLogPipeline — timeout & mapping error")
+@Suite("QuickLogPipeline: timeout & mapping error")
 struct QuickLogPipelineTests {
     @Test("Parse sukses diteruskan apa adanya")
     func successPassthrough() async throws {

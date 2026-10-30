@@ -45,7 +45,7 @@ struct AIInferenceSettingsView: View {
                 }
             }
         }
-        .navigationTitle("AI — W&B Inference")
+        .navigationTitle("AI: W&B Inference")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { refreshStatus() }
         .errorAlert("Gagal", message: $keyActionError)

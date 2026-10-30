@@ -5,7 +5,7 @@ import SwiftData
 import AkhnaFinCore
 
 @MainActor
-@Suite("DebtRepository — CRUD, cicilan, pelunasan")
+@Suite("DebtRepository: CRUD, cicilan, pelunasan")
 struct DebtRepositoryTests {
     private func makeRepository() throws -> DebtRepository {
         DebtRepository(context: ModelContext(try ModelContainerFactory.make(mode: .inMemory)))

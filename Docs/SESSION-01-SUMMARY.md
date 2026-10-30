@@ -1,4 +1,4 @@
-# AkhnaFin — Ringkasan Sesi 01 (Teknis + Flow + Referensi Apple)
+# AkhnaFin, Ringkasan Sesi 01 (Teknis + Flow + Referensi Apple)
 
 Dokumen ini merangkum keseluruhan progress sesi 01: dari nol → app fungsional
 dengan 2 core feature capture + Settings, plus rename ke AkhnaFin. Fokus pada
@@ -49,7 +49,7 @@ Hasil AI TIDAK PERNAH tersimpan tanpa layar konfirmasi.
 
 ---
 
-## 2. Fase 0–2 — Fondasi, NL parser, App Intent
+## 2. Fase 0–2, Fondasi, NL parser, App Intent
 
 ### 2.1 Data model (SwiftData + CloudKit)
 `MoneyTransaction` & `TransactionCategory` (`@Model`). Aturan CloudKit dipatuhi:
@@ -65,7 +65,7 @@ self-referential (`parent` / `subcategories`).
   `SwiftUI.Transaction`), `TransactionCategory` bukan `Category` (bentrok typedef
   `Category` ObjC runtime lintas modul).
 
-### 2.2 NL parser — Foundation Models
+### 2.2 NL parser, Foundation Models
 `FoundationModelsParser` (di target `Services`, satu-satunya tempat
 `import FoundationModels`). `@Generable ParsedTransaction` + `@Guide` per field;
 `SystemLanguageModel.default.availability` untuk graceful state;
@@ -84,10 +84,10 @@ untuk determinisme. Mapper murni `ParsedTransaction.draft(...)` (unit-testable).
 > Inference juga GAGAL di Simulator (`ModelManagerError 1026`) → parse live hanya
 > di device fisik. Verifikasi API dari SDK swiftinterface, bukan pengetahuan lama.
 
-### 2.3 App Intent / Siri — `LogExpenseIntent`
+### 2.3 App Intent / Siri, `LogExpenseIntent`
 `AppIntent` dgn `@Parameter text`, `AppShortcutsProvider` (frasa +
 `\(.applicationName)`). Konfirmasi INTERAKTIF via `SnippetIntent` +
-`requestConfirmation(dialog:snippetIntent:)` — kartu ringkasan + tombol
+`requestConfirmation(dialog:snippetIntent:)`, kartu ringkasan + tombol
 `Button(intent:)` "Edit di App". Wajib di app bundle.
 - App Intents overview: https://developer.apple.com/documentation/appintents
 - `AppIntent`: https://developer.apple.com/documentation/appintents/appintent
@@ -98,31 +98,31 @@ untuk determinisme. Mapper murni `ParsedTransaction.draft(...)` (unit-testable).
 
 ---
 
-## 3. Fase A — Stabilisasi 3 bug device
+## 3. Fase A, Stabilisasi 3 bug device
 
 Ditemukan user saat uji iPhone 17 fisik. Setiap fix diverifikasi.
 
-**BUG-1a parser output salah** — akar: few-shot berisi matematika SALAH
+**BUG-1a parser output salah**, akar: few-shot berisi matematika SALAH
 (`5.73m -> 5370000`). Fix: perbaiki contoh + glossary kategori (nama Indonesia +
 arti English) + greedy sampling. Eval harness `ParserLiveEvalTests` (korpus 20
 kalimat, auto-skip bila Apple Intelligence tak ada): **amount 100%, type 100%**.
 
-**BUG-1b konfirmasi tak bisa diedit** — `requestConfirmation(dialog:)` biner.
+**BUG-1b konfirmasi tak bisa diedit**, `requestConfirmation(dialog:)` biner.
 Fix: `SnippetIntent` interaktif (di atas) + handoff "Edit di App" (§3.1).
 
-**BUG-2 intent stuck** — akar: `AppContainer` membangun ulang container CloudKit
+**BUG-2 intent stuck**, akar: `AppContainer` membangun ulang container CloudKit
 tiap invocation. Fix: `static let shared` (sekali per proses) + `QuickLogPipeline`
 dengan pagar waktu via `withThrowingTaskGroup` (parser lambat → `.timedOut`,
 bukan hang) + mapping error granular.
 - Swift Concurrency task group: https://developer.apple.com/documentation/swift/withthrowingtaskgroup(of:returning:body:)
 - `Task.sleep(for:)`: https://developer.apple.com/documentation/swift/task/sleep(for:tolerance:clock:)
 
-**BUG-3 keyboard tak bisa dismiss** — Fix: `.scrollDismissesKeyboard(.immediately)`
+**BUG-3 keyboard tak bisa dismiss**, Fix: `.scrollDismissesKeyboard(.immediately)`
 + tap-anywhere (di-gate notifikasi `keyboardWillShow/Hide` agar fokus field tak
 regresi). Tombol toolbar "Selesai" dihapus atas preferensi user.
 - `scrollDismissesKeyboard`: https://developer.apple.com/documentation/swiftui/view/scrolldismisseskeyboard(_:)
 
-### 3.1 Handoff "Edit di App" — `PendingDraftStore`
+### 3.1 Handoff "Edit di App", `PendingDraftStore`
 Dua slot file JSON di Application Support: "confirming" (untuk render snippet) &
 "edit-request" (ditulis saat tombol Edit ditekan; dikonsumsi app saat
 `scenePhase == .active`). Payload `Codable { draft, source }` (source eksplisit).
@@ -135,13 +135,13 @@ Dua slot file JSON di Application Support: "confirming" (untuk render snippet) &
 
 ---
 
-## 4. Fase B — Receipt shortcut
+## 4. Fase B, Receipt shortcut
 
 **Flow:** user bayar → screenshot resi → Shortcut (Action Button/Back Tap) →
 `LogReceiptIntent` (`@Parameter receipt: IntentFile`) → OCR → heuristik → snippet
 konfirmasi A3 yang sama → `commit(source: .receipt, receiptImage:)`.
 
-### 4.1 OCR — `VisionReceiptScanner`
+### 4.1 OCR, `VisionReceiptScanner`
 Vision `RecognizeDocumentsRequest` (iOS 26) → `document.text.transcript` per
 dokumen. Struktur dokumen lebih akurat untuk resi daripada OCR polos.
 - Vision framework: https://developer.apple.com/documentation/vision
@@ -150,9 +150,9 @@ dokumen. Struktur dokumen lebih akurat untuk resi daripada OCR polos.
 - (fallback) `RecognizeTextRequest`: https://developer.apple.com/documentation/vision/recognizetextrequest
 - Param gambar App Intent `IntentFile`: https://developer.apple.com/documentation/appintents/intentfile
 
-### 4.2 Parser resi — `ReceiptHeuristics` (deterministik, BUKAN LLM)
+### 4.2 Parser resi, `ReceiptHeuristics` (deterministik, BUKAN LLM)
 > **Kenapa bukan Foundation Models:** FM menolak SEMUA prompt yang MENGANDUNG
-> teks Indonesia (bukan hanya bila diminta output Indonesia) — resi toko/e-wallet
+> teks Indonesia (bukan hanya bila diminta output Indonesia), resi toko/e-wallet
 > Indonesia pasti berisi kata Indonesia → jalur LLM mustahil. Heuristik justru
 > lebih andal untuk domain sempit ini: deterministik, instan, jalan tanpa Apple
 > Intelligence, 100% unit-testable.
@@ -173,13 +173,13 @@ Logika ekstraksi:
 - Resi selalu `type = .expense` (koreksi ke income di layar konfirmasi bila perlu).
 
 **Uji:** korpus 5 e-resi nyata (transkrip OCR dari screenshot user: SeaBank,
-ShopeePay, Livin' QRIS, Livin' transfer, Referral) — total+merchant benar.
+ShopeePay, Livin' QRIS, Livin' transfer, Referral), total+merchant benar.
 Device-verified: SeaBank + Krom.
 
 ### 4.3 Pipeline & repository
 `QuickLogPipeline.parseReceiptDraft(fromImage:)` = OCR + heuristik dgn pagar
 waktu yang sama dgn jalur kalimat (`withTimeout` single-source).
-`commit(_:source:place:receiptImage:)` — gambar disimpan ke
+`commit(_:source:place:receiptImage:)`, gambar disimpan ke
 `@Attribute(.externalStorage)`.
 - `@Attribute(.externalStorage)`: https://developer.apple.com/documentation/swiftdata/attribute(_:originalname:hashmodifier:)
 
@@ -187,10 +187,10 @@ waktu yang sama dgn jalur kalimat (`withTimeout` single-source).
 
 ## 5. Settings lengkap
 
-**5.1 Status iCloud** — `AppContainer.activeStorageMode` (cloudKit/localOnly)
+**5.1 Status iCloud**, `AppContainer.activeStorageMode` (cloudKit/localOnly)
 direkam saat container dibangun; ditampilkan di `SettingsView`.
 
-**5.2 LocationService** — `CoreLocationService` (`LocationCapturing`): one-shot
+**5.2 LocationService**, `CoreLocationService` (`LocationCapturing`): one-shot
 `CLLocationManager.requestLocation()` + delegate dijembatani ke
 `CheckedContinuation`, pagar waktu 5s, reverse-geocode `CLGeocoder`. TAK PERNAH
 melempar (izin ditolak/timeout → nil, save tetap jalan). Auto-capture SENYAP saat
@@ -204,7 +204,7 @@ koordinat (Sendable) disalin sebelum hop `@MainActor`.
 - `CheckedContinuation` (bridge delegate→async): https://developer.apple.com/documentation/swift/checkedcontinuation
 - Data sensitif lokasi (Info.plist): https://developer.apple.com/documentation/bundleresources/information-property-list/nslocationwheninuseusagedescription
 
-**5.3 Category CRUD** — `TransactionRepository.addCategory/updateCategory/
+**5.3 Category CRUD**, `TransactionRepository.addCategory/updateCategory/
 deleteCategory` (guard `isBuiltIn` tak bisa dihapus; hapus custom → transaksi &
 subkategori ter-nullify via `deleteRule` model). UI `CategoryManagementView`
 (list per jenis, induk+sub, swipe) + `CategoryEditView` (grid SF Symbol, swatch
@@ -218,7 +218,7 @@ warna) + helper `Color(hex:)`.
 Direktori/target/scheme/bundle (`com.aban.AkhnaFin`), package `AkhnaFinKit`,
 modul `AkhnaFinCore`, container CloudKit `iCloud.com.aban.AkhnaFin`, subsystem
 `os.Logger`, docs. **Catatan rilis:** container CloudKit baru BELUM dibuat di
-Apple Developer portal (container lama tak bisa direname) — wajib dibuat sebelum
+Apple Developer portal (container lama tak bisa direname), wajib dibuat sebelum
 rilis. PR: https://github.com/akhnafal-aban/My-RezekiKu/pull/1
 
 ---
@@ -235,7 +235,7 @@ rilis. PR: https://github.com/akhnafal-aban/My-RezekiKu/pull/1
   best practice.
 
 ## 8. Backlog (diparkir, urut nilai)
-Dashboard (Swift Charts — separuh visi awal, verifiable di sim) → Voice
+Dashboard (Swift Charts, separuh visi awal, verifiable di sim) → Voice
 (SpeechAnalyzer/SpeechTranscriber, device-only) → Batch entry.
 - Swift Charts: https://developer.apple.com/documentation/charts
 - Speech (`SpeechAnalyzer`, iOS 26): https://developer.apple.com/documentation/speech/speechanalyzer

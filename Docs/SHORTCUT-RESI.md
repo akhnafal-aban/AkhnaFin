@@ -3,13 +3,13 @@
 Skenario: selesai bayar → screenshot resi (e-wallet, struk kasir difoto, invoice) →
 jalankan Shortcut → konfirmasi muncul **di luar app** → tersimpan + gambar resi ikut tercatat.
 
-## Resep A — Screenshot langsung (utama)
+## Resep A, Screenshot langsung (utama)
 
 Di app **Shortcuts** → `+` buat shortcut baru:
 
 1. Tambah aksi **"Take Screenshot"** (kategori Media).
 2. Tambah aksi **"Catat Resi"** (dari AkhnaFin). Parameter *Gambar Resi* otomatis
-   terisi output Screenshot — bila tidak, tap parameternya → pilih variabel **Screenshot**.
+   terisi output Screenshot, bila tidak, tap parameternya → pilih variabel **Screenshot**.
 3. Beri nama mis. **"Catat Resi"**, tambahkan ke Home Screen / Action Button /
    Back Tap (Settings → Accessibility → Touch → Back Tap) untuk akses satu-ketukan.
 
@@ -17,7 +17,7 @@ Alur saat dijalankan: layar di-screenshot → OCR + analisis (deterministik, cep
 tidak butuh Apple Intelligence) → kartu konfirmasi berisi total/merchant/kategori →
 **Simpan** / **Edit di App** / batal.
 
-## Resep B — Dari foto yang sudah ada
+## Resep B, Dari foto yang sudah ada
 
 1. Aksi **"Select Photos"** (atau "Get Latest Photos" limit 1).
 2. Aksi **"Catat Resi"** dgn parameter = hasil langkah 1.
@@ -35,7 +35,7 @@ tidak butuh Apple Intelligence) → kartu konfirmasi berisi total/merchant/kateg
 
 - Total diambil dari baris `TOTAL` / `GRAND TOTAL` / `JUMLAH` / `TAGIHAN` (Sub Total
   diabaikan). Resi tanpa baris total → error ramah; catat via Catat Cepat/manual.
-- Tanggal transaksi di-set saat pencatatan (bukan tanggal cetak resi) — koreksi di
+- Tanggal transaksi di-set saat pencatatan (bukan tanggal cetak resi), koreksi di
   layar konfirmasi bila perlu (tombol **Edit di App**).
 - Bermasalah? Ambil log: lihat `Docs/DEBUGGING.md` (filter subsystem
   `com.aban.AkhnaFin`, kategori `Intent`/`Parser`).

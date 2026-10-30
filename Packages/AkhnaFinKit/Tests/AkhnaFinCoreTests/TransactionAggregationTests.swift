@@ -5,7 +5,7 @@ import Foundation
 private func idCalendar() -> Calendar {
     var calendar = Calendar(identifier: .gregorian)
     calendar.locale = Locale(identifier: "id_ID")
-    calendar.firstWeekday = 2  // Senin — eksplisit agar test tak bergantung environment
+    calendar.firstWeekday = 2  // Senin, eksplisit agar test tak bergantung environment
     calendar.timeZone = TimeZone(identifier: "Asia/Jakarta")!
     return calendar
 }
@@ -23,7 +23,7 @@ private func tx(
     MoneyTransaction(amount: amount, type: type, date: date, category: category)
 }
 
-@Suite("StatsPeriod — interval & stepping")
+@Suite("StatsPeriod: interval & stepping")
 struct StatsPeriodTests {
     let calendar = idCalendar()
 
@@ -64,7 +64,7 @@ struct StatsPeriodTests {
     }
 }
 
-@Suite("TransactionAggregation — totals, kategori, seri harian")
+@Suite("TransactionAggregation: totals, kategori, seri harian")
 struct TransactionAggregationTests {
     let calendar = idCalendar()
 
@@ -110,7 +110,7 @@ struct TransactionAggregationTests {
     func uncategorizedBucketAndExpenseOnly() {
         let transactions = [
             tx(7000),
-            tx(9_000_000, type: .income),  // bukan expense — harus diabaikan
+            tx(9_000_000, type: .income),  // bukan expense, harus diabaikan
         ]
         let slices = TransactionAggregation.expenseByCategory(transactions)
         #expect(slices.count == 1)

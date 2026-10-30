@@ -1,4 +1,4 @@
-# PLAN-000 — Master Roadmap (PLAN V2: Stabilisasi Inti + Receipt Intent)
+# PLAN-000, Master Roadmap (PLAN V2: Stabilisasi Inti + Receipt Intent)
 
 - **Status:** Aktif
 - **Dibuat:** 2026-07-04
@@ -8,12 +8,12 @@
 Konvensi dokumen plan (berlaku semua plan berikutnya):
 - Direktori `Docs/Plans/`. Nama `PLAN-NNN-slug-kebab.md` (NNN 3 digit, urut kronologis).
 - Header wajib: `Status: Draft|Aktif|Selesai|Batal`, tanggal, commit range, link plan induk.
-- Satu task/fase besar = satu file. Update `Status` saat mulai/selesai. Jangan timpa plan lama — pengganti = nomor baru + link balik.
+- Satu task/fase besar = satu file. Update `Status` saat mulai/selesai. Jangan timpa plan lama, pengganti = nomor baru + link balik.
 
 ## 1. Konteks
 
-**AkhnaFin** — app finansial iOS 26 pribadi (solo dev). Fase 0–2 selesai: fondasi modular + CRUD manual + NL parser (Foundation Models, input English) + App Intent Siri. User uji di **iPhone 17 fisik → 3 bug serius** pada fitur inti. Keputusan user:
-1. Perbaiki total kualitas fitur inti sebelum fitur baru — maksimalkan testing & debugging.
+**AkhnaFin**, app finansial iOS 26 pribadi (solo dev). Fase 0–2 selesai: fondasi modular + CRUD manual + NL parser (Foundation Models, input English) + App Intent Siri. User uji di **iPhone 17 fisik → 3 bug serius** pada fitur inti. Keputusan user:
+1. Perbaiki total kualitas fitur inti sebelum fitur baru, maksimalkan testing & debugging.
 2. Tambah skenario: screenshot resi via Shortcut → analisis → konfirmasi di luar app.
 3. **Berhenti setelah 2 fase** (A & B). Fitur lain → backlog.
 4. Setelah selesai: user minta template prompt design system untuk AI design agent (tunggu permintaan eksplisit).
@@ -44,10 +44,10 @@ Commit: `2d11ef8` fondasi → `6dc16b7` Fase 0 → `3e35255` refactor logic-only
 
 ## 4. Dua Fase
 
-- **FASE A — Stabilisasi Inti** → PLAN-001 (Status Aktif). Tutup 3 bug device + parser terukur + intent tahan banting. Gerbang A6 wajib lulus (unit + sim + device user) sebelum Fase B.
-- **FASE B — Receipt Screenshot via Shortcut** → PLAN-002 (Status Draft sampai A6 lulus). Vision OCR → parser resi → intent → konfirmasi di luar app → commit `source: .receipt` + `receiptImageData`.
+- **FASE A, Stabilisasi Inti** → PLAN-001 (Status Aktif). Tutup 3 bug device + parser terukur + intent tahan banting. Gerbang A6 wajib lulus (unit + sim + device user) sebelum Fase B.
+- **FASE B, Receipt Screenshot via Shortcut** → PLAN-002 (Status Draft sampai A6 lulus). Vision OCR → parser resi → intent → konfirmasi di luar app → commit `source: .receipt` + `receiptImageData`.
 
-## 5. Batas Scope — SETELAH FASE B: BERHENTI
+## 5. Batas Scope, SETELAH FASE B: BERHENTI
 
 Backlog diparkir (JANGAN kerjakan): Voice/Speech, batch entry UI, dashboard/Charts, SettingsFeature, LocationService impl, enhancement iOS 27, App Group widget. Arsitektur sudah sediakan protokol/hook.
 

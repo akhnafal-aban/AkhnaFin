@@ -4,7 +4,7 @@ import AkhnaFinCore
 import ServiceInterfaces
 @testable import Services
 
-@Suite("Parser resi — heuristik deterministik")
+@Suite("Parser resi: heuristik deterministik")
 struct ReceiptParsingTests {
     /// Tanpa key → parseReceipt otomatis jatuh ke heuristik lokal, tanpa network.
     private let parser = GLMTransactionParser(

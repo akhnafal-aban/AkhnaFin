@@ -1,6 +1,6 @@
-# PLAN-001 — Fase A: Stabilisasi Inti
+# PLAN-001, Fase A: Stabilisasi Inti
 
-- **Status:** Selesai — gerbang device terbukti via log user iPhone 17 (LogExpense mulai→parse sukses→konfirmasi; keyboard & QuickAdd dipakai). Catatan pasca-gerbang: tombol "Selesai" dihapus atas preferensi user (tap/scroll dismiss cukup).
+- **Status:** Selesai, gerbang device terbukti via log user iPhone 17 (LogExpense mulai→parse sukses→konfirmasi; keyboard & QuickAdd dipakai). Catatan pasca-gerbang: tombol "Selesai" dihapus atas preferensi user (tap/scroll dismiss cukup).
 - **Dibuat:** 2026-07-04 · **Selesai:** 2026-07-06
 - **Induk:** PLAN-000-master-roadmap
 - **Commit range:** `1336222`(A0) `3234cd0`(A1) `a4eea46`(A2) `87b47a6`(A4) `f5ead39`(A3) `846de8e`(A5)
@@ -10,7 +10,7 @@
 - A1 ✅ keyboard: scroll/tap/Selesai dismiss (gated agar fokus field tak regresi); terverifikasi sim.
 - A2 ✅ AppContainer.shared sekali per proses; QuickLogPipeline timeout 15s + error granular (4 test).
 - A3 ✅ snippet konfirmasi interaktif + Edit di App (PendingDraftStore 2 slot, handoff → TransactionFormView).
-- A4 ✅ parser: few-shot salah diperbaiki, glossary, greedy; eval live 20 kalimat: amount 100%, type 100%, kategori 88% (2 miss subkategori Olahraga — batas model 300M, layar konfirmasi menutupi).
+- A4 ✅ parser: few-shot salah diperbaiki, glossary, greedy; eval live 20 kalimat: amount 100%, type 100%, kategori 88% (2 miss subkategori Olahraga, batas model 300M, layar konfirmasi menutupi).
 - A5 ✅ TransactionFormView tunggal (add/edit/confirmDraft); CRUD sim end-to-end ✅.
 - Total 25 unit test hijau (incl. live eval di Mac host).
 

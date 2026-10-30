@@ -1,6 +1,6 @@
-# PLAN-003 — Settings Lengkap
+# PLAN-003, Settings Lengkap
 
-- **Status:** Selesai (implementasi + unit + sim) — checklist device menunggu user
+- **Status:** Selesai (implementasi + unit + sim), checklist device menunggu user
 - **Dibuat:** 2026-07-10
 - **Induk:** PLAN-000-master-roadmap (item backlog "SettingsFeature", dibuka atas permintaan user pasca Fase B)
 - **Commit range:** `b17c54d`(S1) `b5b292a`(S2) `32ef460`(S3) + S4
@@ -15,7 +15,7 @@
 ## Sisa (device/user)
 Izin lokasi tampil saat commit pertama & lokasi tersimpan (cek detail); tambah/edit/hapus kategori muncul di picker form; hapus bawaan ditolak.
 
-Tujuan: ganti placeholder Pengaturan jadi Settings fungsional — (1) kelola kategori CRUD+subkategori, (2) toggle "Rekam lokasi" + implementasi `LocationService` (CoreLocation, auto-capture senyap di commit dalam-app), (3) status sync iCloud. Pertahankan arsitektur (logic di package, UI di app), pipeline, SDK-first, commit per slice + test hijau.
+Tujuan: ganti placeholder Pengaturan jadi Settings fungsional, (1) kelola kategori CRUD+subkategori, (2) toggle "Rekam lokasi" + implementasi `LocationService` (CoreLocation, auto-capture senyap di commit dalam-app), (3) status sync iCloud. Pertahankan arsitektur (logic di package, UI di app), pipeline, SDK-first, commit per slice + test hijau.
 
 ## Slice
 
@@ -25,9 +25,9 @@ Tujuan: ganti placeholder Pengaturan jadi Settings fungsional — (1) kelola kat
 
 **S2. LocationService + toggle.**
 - Riset SDK CoreLocation one-shot async (CLLocationUpdate/CLServiceSession vs requestLocation).
-- `Services/CoreLocationService: LocationCapturing` — `captureCurrent()` one-shot + reverse geocode (`CLGeocoder`) → `CapturedPlace?`; gagal/izin ditolak → nil (tak pernah menggagalkan commit).
+- `Services/CoreLocationService: LocationCapturing`, `captureCurrent()` one-shot + reverse geocode (`CLGeocoder`) → `CapturedPlace?`; gagal/izin ditolak → nil (tak pernah menggagalkan commit).
 - Toggle `@AppStorage("recordLocation")` (default true). Gating di app-layer: bila off → skip capture.
-- Wire ke commit DALAM-APP saja (TransactionFormView.save add/confirm, QuickAdd) — intent headless dilewati (butuh izin Always). `AppDependencies` sediakan `locationService`.
+- Wire ke commit DALAM-APP saja (TransactionFormView.save add/confirm, QuickAdd), intent headless dilewati (butuh izin Always). `AppDependencies` sediakan `locationService`.
 - Info.plist: `NSLocationWhenInUseUsageDescription`.
 - Uji: mock (sudah ada) untuk gating; service nyata di device.
 

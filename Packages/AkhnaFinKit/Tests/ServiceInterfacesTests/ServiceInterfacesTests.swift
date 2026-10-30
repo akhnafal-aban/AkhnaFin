@@ -2,7 +2,7 @@ import Testing
 import Foundation
 @testable import ServiceInterfaces
 
-@Suite("ServiceInterfaces — draft & mock")
+@Suite("ServiceInterfaces: draft & mock")
 struct ServiceInterfacesTests {
     @Test("Mock parser mengisi rawInput dengan teks asli")
     func mockParserEchoesRawInput() async throws {

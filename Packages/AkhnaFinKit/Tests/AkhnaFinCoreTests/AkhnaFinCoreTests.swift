@@ -2,7 +2,7 @@ import Testing
 import Foundation
 @testable import AkhnaFinCore
 
-@Suite("AkhnaFinCore — model & formatting")
+@Suite("AkhnaFinCore: model & formatting")
 struct AkhnaFinCoreTests {
     @Test("MoneyTransaction default sesuai baseline")
     func transactionDefaults() {

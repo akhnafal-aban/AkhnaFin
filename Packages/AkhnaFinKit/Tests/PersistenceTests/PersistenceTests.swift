@@ -6,7 +6,7 @@ import AkhnaFinCore
 import ServiceInterfaces
 
 @MainActor
-@Suite("Persistence — seeder, repository, draft mapping")
+@Suite("Persistence: seeder, repository, draft mapping")
 struct PersistenceTests {
     private func makeContext() throws -> ModelContext {
         ModelContext(try ModelContainerFactory.make(mode: .inMemory))

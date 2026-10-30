@@ -6,7 +6,7 @@ import ImageIO
 import UniformTypeIdentifiers
 @testable import Services
 
-@Suite("VisionReceiptScanner — OCR resi sintetis")
+@Suite("VisionReceiptScanner: OCR resi sintetis")
 struct ReceiptScannerTests {
     @Test("Teks kunci resi terekstrak dari gambar", .timeLimit(.minutes(2)))
     func extractsSyntheticReceipt() async throws {
@@ -31,7 +31,7 @@ struct ReceiptScannerTests {
         #expect(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
 
-    // MARK: - Render helper (putih, teks hitam besar — ramah OCR)
+    // MARK: - Render helper (putih, teks hitam besar, ramah OCR)
 
     private static func renderReceiptPNG(lines: [String], width: Int = 600) throws -> Data {
         let lineHeight = 48

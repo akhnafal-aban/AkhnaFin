@@ -142,7 +142,7 @@ struct TransactionFormView: View {
         if case .confirmDraft(let draft, _, _) = mode { draft.rawInput } else { "" }
     }
 
-    /// Kira-kira lebih dari satu baris pada lebar form (callout) — butuh read-more.
+    /// Kira-kira lebih dari satu baris pada lebar form (callout), butuh read-more.
     private var isRawInputLong: Bool {
         rawInput.count > 45
     }

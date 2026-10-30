@@ -1,4 +1,4 @@
-# PLAN-004 — Fase C: Dashboard + Restrukturisasi Jalur Capture
+# PLAN-004, Fase C: Dashboard + Restrukturisasi Jalur Capture
 
 - **Status:** Selesai (verifikasi device oleh user tertunda)
 - **Dibuat:** 2026-07-19
@@ -17,13 +17,13 @@ jalur capture dikonsolidasi ke menu "+" di Transaksi, plus jalur baru
 
 - **Dashboard (tab pertama):** segmen Minggu/Bulan/Tahun + panah antar periode;
   ringkasan keluar/masuk/selisih; donut kategori (top-5 + "Lainnya"); bar tren
-  harian (bulanan untuk periode Tahun). Layout FIXED — reorderable container =
+  harian (bulanan untuk periode Tahun). Layout FIXED, reorderable container =
   enhancement iOS 27.
 - **Menu "+" (HIG pull-down button):** Text Entry (sheet QuickAddView) →
   Upload Resi (PhotosPicker) → Manual. Urutan = prioritas pemakaian.
 - **Hutang/piutang:** DIPARKIR → kandidat **PLAN-005**. Butuh domain modeling
   sendiri (counterparty, arah, status lunas, relasi pelunasan). Skema SwiftData
-  additive aman CloudKit — dashboard tidak menghalangi; kartu "Hutang" tinggal
+  additive aman CloudKit, dashboard tidak menghalangi; kartu "Hutang" tinggal
   ditambah nanti.
 
 ## 3. Keputusan teknis
@@ -63,7 +63,7 @@ jalur capture dikonsolidasi ke menu "+" di Transaksi, plus jalur baru
 
 - 52 unit test hijau; `xcodebuild` SUCCEEDED (nol warning baru).
 - Simulator iPhone 17: empty state ✓, dashboard terisi (ringkasan Rupiah, donut
-  warna kategori + legend, tren) ✓ — screenshot di sesi.
+  warna kategori + legend, tren) ✓, screenshot di sesi.
 - **Gotcha baru:** `simctl` juga wajib prefix `DEVELOPER_DIR` (tanpa itu daftar
   device kosong); env var ke app sim wajib prefix `SIMCTL_CHILD_`.
 - **Tertunda (device user):** menu "+" tap-through, Upload Resi end-to-end
@@ -72,7 +72,7 @@ jalur capture dikonsolidasi ke menu "+" di Transaksi, plus jalur baru
 
 ## 7. Berikutnya
 
-- **PLAN-005 (kandidat):** hutang/piutang — model `Debt`/counterparty, status,
+- **PLAN-005 (kandidat):** hutang/piutang, model `Debt`/counterparty, status,
   relasi pelunasan; kartu Hutang di dashboard.
 - Demo seed round-robin menempelkan kategori income ke expense (artefak seed,
-  bukan bug agregasi) — rapikan bila seed dipakai lebih luas.
+  bukan bug agregasi), rapikan bila seed dipakai lebih luas.

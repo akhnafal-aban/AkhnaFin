@@ -150,7 +150,7 @@ public struct GLMTransactionParser: TransactionParsing {
     private var sentencePrompt: String {
         """
         You are the transaction parser of an Indonesian personal-finance app. \
-        Parse the user's sentence — it may be Indonesian OR English — into JSON.
+        Parse the user's sentence (Indonesian or English) into JSON.
 
         Amount rules: "k" = x1000 ("20k" = 20000, "35k" = 35000); \
         "jt" and "m" = x1000000 ("2.5m" = 2500000, "5.73jt" = 5730000). \
@@ -174,7 +174,7 @@ public struct GLMTransactionParser: TransactionParsing {
         You are the receipt parser of an Indonesian personal-finance app. \
         The user message is OCR text from a shopping receipt (usually Indonesian).
 
-        Extract: the FINAL grand total actually paid (after discounts and tax — \
+        Extract: the FINAL grand total actually paid (after discounts and tax, \
         usually the largest TOTAL/JUMLAH line, never "kembali"/change), the merchant \
         name, a short item summary in "note", and the best-matching category.
         "type" is always "expense". "days_ago" is 0 unless the receipt shows a \

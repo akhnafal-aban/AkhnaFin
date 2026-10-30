@@ -1,4 +1,4 @@
-# Context Window — Sesi 02
+# Context Window, Sesi 02
 
 - **Tanggal:** 2026-07-19
 - **Ringkasan:** Review + refactor Intents (dedup, snippet ramping, 3 fix
@@ -13,8 +13,8 @@
 | Bagian | Ringkas |
 |---|---|
 | Review kode (level high) | 6 finding: snippet overcrowded, intent ~90% duplikat, label type hardcode, urutan `clearStash` sebelum commit, race `clearStash` di RootView, currencyCode hilang saat confirm |
-| Refactor intents | `QuickLogConfirmation.confirmStashAndCommit` (extension `AppIntent` — `requestConfirmation` adalah member intent, bukan fungsi bebas); commit SEBELUM clear; snippet ramping (amount+jenis+1 deskriptor+tanggal); `TransactionType.displayName`; RootView clearStash hanya setelah edit-request dikonsumsi |
-| Fase C Slice A | `StatsPeriod` (interval+step) + `TransactionAggregation` (totals tanpa transfer, roll-up subkategori, seri harian/bulanan zero-filled) — Core, TDD, 11 test |
+| Refactor intents | `QuickLogConfirmation.confirmStashAndCommit` (extension `AppIntent`, `requestConfirmation` adalah member intent, bukan fungsi bebas); commit SEBELUM clear; snippet ramping (amount+jenis+1 deskriptor+tanggal); `TransactionType.displayName`; RootView clearStash hanya setelah edit-request dikonsumsi |
+| Fase C Slice A | `StatsPeriod` (interval+step) + `TransactionAggregation` (totals tanpa transfer, roll-up subkategori, seri harian/bulanan zero-filled), Core, TDD, 11 test |
 | Fase C Slice B | Tab Catat Cepat DIHAPUS; toolbar "+" Transaksi = `Menu` (HIG pull-down): Text Entry → Upload Resi → Manual; Upload Resi = `PhotosPicker` → `Data` → `parseReceiptDraft` (pipeline resi yang sama dgn Shortcut) → konfirmasi + gambar; QuickAddView = sheet "Text Entry" + tombol Tutup |
 | Fase C Slice C | `DashboardView` tab pertama: segmen periode + panah (maju disabled ke masa depan), ringkasan, donut `SectorMark` (top-5+"Lainnya", warna colorHex, `chartForegroundStyleScale`), bar tren (`unit: .day`/`.month`), a11y label per mark |
 | Verifikasi sim | Empty state + dashboard terisi (screenshot). Seed demo DEBUG-only `AKHNAFIN_DEMO_SEED=1` |
@@ -24,16 +24,16 @@
 
 ## Keputusan & gotchas baru (tambahan dari sesi 01)
 
-- **`simctl` juga WAJIB prefix `DEVELOPER_DIR`** — tanpa itu `simctl list devices` KOSONG (jebakan senyap).
+- **`simctl` juga WAJIB prefix `DEVELOPER_DIR`**, tanpa itu `simctl list devices` KOSONG (jebakan senyap).
 - **Env var ke app simulator wajib prefix `SIMCTL_CHILD_`** pada `simctl launch` (tanpa itu jadi launch argument, bukan env).
 - `requestConfirmation` = member `AppIntent` → helper bersama harus extension `AppIntent`, bukan fungsi bebas.
 - Transfer dikecualikan dari totals dashboard; subkategori digulung ke induk; periode Tahun pakai seri bulanan (365 bar tak terbaca).
-- `loadTransferable(type: Data.self)` (bukan `Image`) untuk foto resi — JPEG/HEIC.
+- `loadTransferable(type: Data.self)` (bukan `Image`) untuk foto resi, JPEG/HEIC.
 - Menu "+" = HIG pull-down button (aksi kreasi terkonsolidasi, label verba, prioritas atas). Sheet wajib punya tombol tutup.
 - **PLAN-005 SELESAI** (bukan lagi kandidat): ledger terpisah dari kas (keputusan user), cicilan + paylater, Lunasi = payment sebesar sisa (idempotent), migrasi additive terverifikasi atas store lama.
-- **JANGAN pakai `chartForegroundStyleScale(domain:range:)`** — fatal `Charts/ConcreteScale+Discrete.swift:96` (nil unwrap, data-dependent, sim iOS 26.x, ditemukan via bisect). Pakai warna statis per mark + legend manual.
-- **Visi user tercatat (belum dibangun):** asset management — depresiasi, asset value, kategori aset. Tunggu permintaan eksplisit.
-- **App Intents snippet — JANGAN `requestConfirmation(snippetIntent:)` untuk snippet dgn tombol aksi-sendiri** (mis. "Edit di App"): `await requestConfirmation` menahan `perform()`, tombol nested yang buka app TAK menutup snippet → nggantung (device-verified). Pakai RESULT snippet (`ShowsSnippetView`, perform selesai seketika) dgn tiap tombol = AppIntent yang commit/handoff/batal sendiri (WWDC25 sesi 275). Fix di `ca7bf0a`.
+- **JANGAN pakai `chartForegroundStyleScale(domain:range:)`**, fatal `Charts/ConcreteScale+Discrete.swift:96` (nil unwrap, data-dependent, sim iOS 26.x, ditemukan via bisect). Pakai warna statis per mark + legend manual.
+- **Visi user tercatat (belum dibangun):** asset management, depresiasi, asset value, kategori aset. Tunggu permintaan eksplisit.
+- **App Intents snippet, JANGAN `requestConfirmation(snippetIntent:)` untuk snippet dgn tombol aksi-sendiri** (mis. "Edit di App"): `await requestConfirmation` menahan `perform()`, tombol nested yang buka app TAK menutup snippet → nggantung (device-verified). Pakai RESULT snippet (`ShowsSnippetView`, perform selesai seketika) dgn tiap tombol = AppIntent yang commit/handoff/batal sendiri (WWDC25 sesi 275). Fix di `ca7bf0a`.
 
 ## Status verifikasi tertunda (device / user)
 
@@ -45,7 +45,7 @@
 
 1. User verifikasi device (daftar di atas) → perbaiki temuan.
 2. **PLAN-005 hutang/piutang** bila user lanjut.
-3. Rapikan seed demo (kategori income nempel ke expense — artefak seed, bukan bug agregasi).
+3. Rapikan seed demo (kategori income nempel ke expense, artefak seed, bukan bug agregasi).
 
 ## Peta dokumen
 

@@ -162,7 +162,7 @@ struct TransactionListView: View {
                     ContentUnavailableView(
                         "Transaksi pertamamu menunggu",
                         systemImage: "list.bullet.rectangle",
-                        description: Text("Tap + lalu pilih Text Entry — ketik misalnya \"makan siang 35k\".")
+                        description: Text("Tap + lalu pilih Text Entry, ketik misalnya \"makan siang 35k\".")
                     )
                 } else if filteredTransactions.isEmpty {
                     ContentUnavailableView.search(text: searchText)

@@ -2,7 +2,7 @@ import Testing
 import Foundation
 @testable import AkhnaFinCore
 
-@Suite("AkhnaFinCore — grouping transaksi")
+@Suite("AkhnaFinCore: grouping transaksi")
 struct TransactionGroupingTests {
     @Test("Grup per hari, terbaru dulu, item dalam hari terurut menurun")
     func groupsByDayNewestFirst() {

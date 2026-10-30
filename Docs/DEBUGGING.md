@@ -41,7 +41,7 @@ Instruments → template "os_signpost" → filter subsystem `com.aban.AkhnaFin`.
 
 ## Reproduksi bug intent (BUG-2)
 
-1. Pastikan app TIDAK di foreground (kill dari app switcher) — intent jalan headless.
+1. Pastikan app TIDAK di foreground (kill dari app switcher), intent jalan headless.
 2. Jalankan Shortcut/Siri "Log expense in AkhnaFin" dgn kalimat English.
 3. Amati: stuck/error → segera `log collect --device --last 5m`.
 4. Cari: kategori `Intent` tahapan terakhir sebelum diam; error FM di `Parser`; pesan `LaunchServices`/`runningboardd` soal terminasi (budget waktu).
@@ -49,8 +49,8 @@ Instruments → template "os_signpost" → filter subsystem `com.aban.AkhnaFin`.
 ## Gotchas
 
 - Build/test CLI wajib `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
-- FM inference tidak jalan di simulator (`ModelManagerError 1026`) — uji live parse hanya di device.
-- FM tidak dukung Bahasa Indonesia — input English. Lebih jauh: FM MENOLAK prompt
-  yang MENGANDUNG teks Indonesia (`unsupportedLanguageOrLocale`) — karena itu parser
+- FM inference tidak jalan di simulator (`ModelManagerError 1026`), uji live parse hanya di device.
+- FM tidak dukung Bahasa Indonesia, input English. Lebih jauh: FM MENOLAK prompt
+  yang MENGANDUNG teks Indonesia (`unsupportedLanguageOrLocale`), karena itu parser
   RESI memakai heuristik deterministik (`ReceiptHeuristics`), bukan LLM, dan bekerja
   tanpa Apple Intelligence.

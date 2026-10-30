@@ -2,7 +2,7 @@ import Testing
 import Foundation
 @testable import AkhnaFinCore
 
-@Suite("DebtRecord — status turunan & summary")
+@Suite("DebtRecord: status turunan & summary")
 struct DebtRecordTests {
     private func record(
         principal: Decimal,
@@ -56,7 +56,7 @@ struct DebtRecordTests {
         #expect(!noDue.isOverdue())
     }
 
-    @Test("Summary outstanding per arah — record lunas dilewati")
+    @Test("Summary outstanding per arah: record lunas dilewati")
     func summaryOutstanding() {
         let records = [
             record(principal: 500_000, direction: .iOwe, paid: [200_000]),   // sisa 300k
