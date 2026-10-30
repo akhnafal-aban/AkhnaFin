@@ -68,6 +68,7 @@ struct DashboardView: View {
                 }
             }
             .warmDarkBackground()
+            .contentMargins(.top, 8, for: .scrollContent)
             .navigationTitle("Dashboard")
             .toolbarTitleDisplayMode(.inlineLarge)
             .onChange(of: period) {
