@@ -47,6 +47,13 @@ public final class TransactionRepository {
         return try context.fetch(descriptor)
     }
 
+    public func fetchTransaction(id: UUID) throws -> MoneyTransaction? {
+        let descriptor = FetchDescriptor<MoneyTransaction>(
+            predicate: #Predicate { $0.id == id }
+        )
+        return try context.fetch(descriptor).first
+    }
+
     // MARK: - Commit draft (muara pipeline capture)
 
     @discardableResult

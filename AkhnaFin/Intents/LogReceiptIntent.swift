@@ -7,6 +7,7 @@ import AppIntents
 import OSLog
 import UniformTypeIdentifiers
 import AkhnaFinCore
+import Persistence
 import ServiceInterfaces
 import Services
 
@@ -43,12 +44,21 @@ struct LogReceiptIntent: AppIntent {
         }
         intentLog.info("LogReceipt parse sukses")
 
-        PendingDraftStore.stash(draft, source: .receipt, receiptImage: imageData)
+        let transaction: MoneyTransaction
+        do {
+            transaction = try dependencies.repository.commit(
+                draft, source: .receipt, receiptImage: imageData
+            )
+        } catch {
+            intentLog.error("LogReceipt commit gagal: \(String(describing: error), privacy: .public)")
+            return .result(dialog: "Resi terbaca, tapi gagal menyimpan. Coba dari dalam app.")
+        }
+
         if systemContext.currentMode.canContinueInForeground {
             try await continueInForeground("Periksa resinya di app", alwaysConfirm: false)
         }
-        PendingDraftStore.promoteStashToEditRequest()
-        return .result(dialog: "Resi terbaca — periksa detailnya di app.")
+        PendingDraftStore.requestEdit(transactionID: transaction.id, source: .receipt)
+        return .result(dialog: "Resi tercatat. Detailnya bisa kamu ubah di app.")
     }
 }
 

@@ -6,6 +6,7 @@
 import AppIntents
 import OSLog
 import AkhnaFinCore
+import Persistence
 import ServiceInterfaces
 import Services
 
@@ -40,12 +41,19 @@ struct LogExpenseIntent: AppIntent {
         }
         intentLog.info("LogExpense parse sukses")
 
-        PendingDraftStore.stash(draft, source: .appIntent)
+        let transaction: MoneyTransaction
+        do {
+            transaction = try dependencies.repository.commit(draft, source: .appIntent)
+        } catch {
+            intentLog.error("LogExpense commit gagal: \(String(describing: error), privacy: .public)")
+            return .result(dialog: "Kalimat terbaca, tapi gagal menyimpan. Coba dari dalam app.")
+        }
+
         if systemContext.currentMode.canContinueInForeground {
             try await continueInForeground("Periksa catatannya di app", alwaysConfirm: false)
         }
-        PendingDraftStore.promoteStashToEditRequest()
-        return .result(dialog: "Tercatat \(DraftSummary.text(of: draft)) — periksa detailnya di app.")
+        PendingDraftStore.requestEdit(transactionID: transaction.id, source: .appIntent)
+        return .result(dialog: "Tercatat \(DraftSummary.text(of: draft)). Detailnya bisa kamu ubah di app.")
     }
 }
 

@@ -33,7 +33,7 @@ struct DashboardView: View {
                     ContentUnavailableView(
                         "Periode ini masih kosong",
                         systemImage: "chart.pie",
-                        description: Text("Catat lewat tombol + di tab Transaksi — atau bilang saja ke Siri, sekarang paham Bahasa Indonesia.")
+                        description: Text("Catat Transaksi Terlebih Dahulu.")
                     )
                     .listRowBackground(Color.clear)
 
